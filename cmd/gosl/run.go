@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"gosl/internal/bot"
 	"gosl/internal/httpserver"
 	"gosl/pkg/config"
 	"gosl/pkg/embedfs"
@@ -92,6 +93,12 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 	// Setups a channel to listen for os.Signal
 	handleMaintSignals(ctx, conn, config, logger, &maint)
 
+	// Initialize the discord bot
+	discordBot, err := bot.NewBot(config.DiscordBotToken, logger, &staticFS)
+	if err != nil {
+		return errors.Wrap(err, "bot.NewBot")
+	}
+
 	// Runs the http server
 	logger.Debug().Msg("Starting up the HTTP server")
 	go func() {
@@ -101,9 +108,17 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 		}
 	}()
 
+	// Runs the discord bot
+	go func() {
+		logger.Info().Msg("Starting discord bot")
+		if err := discordBot.Start(); err != nil {
+			logger.Error().Err(err).Msg("Error running bot")
+		}
+	}()
+
 	// Handles graceful shutdown
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2)
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
@@ -111,7 +126,15 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 		shutdownCtx, cancel := context.WithTimeout(shutdownCtx, 10*time.Second)
 		defer cancel()
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			logger.Error().Err(err).Msg("Error shutting down server")
+			logger.Error().Err(err).Msg("Error shutting down http server")
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		defer cancel()
+		if err := discordBot.Stop(); err != nil {
+			logger.Error().Err(err).Msg("Error shutting down discord bot")
 		}
 	}()
 	wg.Wait()

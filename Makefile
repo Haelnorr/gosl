@@ -21,6 +21,10 @@ dev:
 	air &\
 	tailwindcss -i ./pkg/embedfs/files/css/input.css -o ./pkg/embedfs/files/css/output.css --watch
 
+botdev:
+	make build
+	bin/gosl
+
 test:
 	go mod tidy && \
 	templ generate && \
@@ -28,3 +32,7 @@ test:
 	go test ./cmd/gosl
 	go test ./pkg/db
 	go test ./internal/middleware
+
+tester:
+	go mod tidy && \
+	go run ./cmd/gosl --port 3232 --tester --loglevel trace

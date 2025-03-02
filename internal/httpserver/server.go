@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"io/fs"
 	"net"
 	"net/http"
 	"time"
@@ -16,10 +17,11 @@ func NewServer(
 	config *config.Config,
 	logger *zerolog.Logger,
 	conn *db.SafeConn,
-	staticFS *http.FileSystem,
+	staticFS *fs.FS,
 	maint *uint32,
 ) *http.Server {
-	srv := createServer(config, logger, conn, staticFS, maint)
+	fs := http.FS(*staticFS)
+	srv := createServer(config, logger, conn, &fs, maint)
 	httpServer := &http.Server{
 		Addr:              net.JoinHostPort(config.Host, config.Port),
 		Handler:           srv,

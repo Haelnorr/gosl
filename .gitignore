@@ -2,3 +2,6 @@
 *.db
 tmp/
 bin/
+*_templ.txt
+*_templ.go
+output.css
