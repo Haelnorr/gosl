@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	github.com/a-h/templ v0.3.833
+	github.com/bwmarrin/discordgo v0.28.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/joho/godotenv v1.5.1
 	github.com/pkg/errors v0.9.1
@@ -12,6 +13,8 @@ require (
 	github.com/stretchr/testify v1.10.0
 	modernc.org/sqlite v1.36.0
 )
+
+require github.com/gorilla/websocket v1.4.2 // indirect
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
