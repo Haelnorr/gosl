@@ -1,0 +1,13 @@
+package page
+
+import "gosl/internal/view/layout"
+import "gosl/pkg/contexts"
+
+templ Profile() {
+	{{ user := contexts.GetUser(ctx) }}
+	@layout.Global("Profile - " + user.Username) {
+		<div class="">
+			Hello, { user.Username }
+		</div>
+	}
+}

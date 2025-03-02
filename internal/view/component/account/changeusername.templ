@@ -1,0 +1,108 @@
+package account
+
+import "gosl/pkg/contexts"
+
+templ ChangeUsername(err string, username string) {
+	{{
+	user := contexts.GetUser(ctx)
+	if username == "" {
+		username = user.Username
+	}
+	}}
+	<form
+		hx-post="/change-username"
+		hx-swap="outerHTML"
+		class="w-[90%] mx-auto mt-5"
+		x-data={ templ.JSFuncCall(
+                    "usernameComponent", username, user.Username, err,
+                    ).CallInline }
+	>
+		<script>
+            function usernameComponent(newUsername, oldUsername, err) {
+                return {
+                    username: newUsername,
+                    initialUsername: oldUsername, 
+                    err: err,
+                    resetUsername() {
+                        this.username = this.initialUsername;
+                        this.err = "";
+                    },
+                };
+            }
+        </script>
+		<div
+			class="flex flex-col sm:flex-row"
+		>
+			<div
+				class="flex flex-col sm:flex-row sm:items-center relative"
+			>
+				<label
+					for="username"
+					class="text-lg w-20"
+				>Username</label>
+				<input
+					type="text"
+					id="username"
+					name="username"
+					class="py-1 px-4 rounded-lg text-md
+                    bg-surface0 border border-surface2 w-50 sm:ml-5
+                    disabled:opacity-50 ml-0 disabled:pointer-events-none"
+					required
+					aria-describedby="username-error"
+					x-model="username"
+				/>
+				<div
+					class="absolute inset-y-0 sm:start-68 start-43 pt-9
+                        pointer-events-none sm:pt-2"
+					x-show="err"
+					x-cloak
+				>
+					<svg
+						class="size-5 text-red"
+						width="16"
+						height="16"
+						fill="currentColor"
+						viewBox="0 0 16 16"
+						aria-hidden="true"
+					>
+						<path
+							d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8 
+                                4a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0 
+                                0 1.1 0l.35-3.507A.905.905 0 0 0 8 4zm.002 6a1 
+                                1 0 1 0 0 2 1 1 0 0 0 0-2z"
+						></path>
+					</svg>
+				</div>
+			</div>
+			<div class="mt-2 sm:mt-0">
+				<button
+					class="rounded-lg bg-blue py-1 px-2 text-mantle sm:ml-2
+                hover:cursor-pointer hover:bg-blue/75 transition"
+					x-cloak
+					x-show="username !== initialUsername"
+					x-transition.opacity.duration.500ms
+				>
+					Update
+				</button>
+				<button
+					class="rounded-lg bg-overlay0 py-1 px-2 text-mantle
+                hover:cursor-pointer hover:bg-surface2 transition"
+					type="button"
+					href="#"
+					x-cloak
+					x-show="username !== initialUsername"
+					x-transition.opacity.duration.500ms
+					@click="resetUsername()"
+				>
+					Cancel
+				</button>
+			</div>
+		</div>
+		<p
+			class="block text-red sm:ml-26 mt-1 transition"
+			x-cloak
+			x-show="err"
+			x-text="err"
+		></p>
+	</form>
+}

@@ -1,0 +1,90 @@
+package form
+
+templ ConfirmPassword(err string) {
+	<form
+		hx-post="/reauthenticate"
+		x-data={ templ.JSFuncCall(
+                "confirmPassData", err,
+                ).CallInline }
+		x-on:htmx:xhr:loadstart="submitted=true;buttontext='Loading...'"
+	>
+		<script>
+            function confirmPassData(err) {
+                return {
+                    submitted: false,
+                    buttontext: 'Confirm', 
+                    errMsg: err,
+                    reset() {
+                        this.err = "";
+                    },
+                };
+            }
+        </script>
+		<div
+			class="grid gap-y-4"
+		>
+			<div class="mt-5">
+				<div class="relative">
+					<input
+						type="password"
+						id="password"
+						name="password"
+						class="py-3 px-4 block w-full rounded-lg text-sm
+                        focus:border-blue focus:ring-blue bg-base
+                        disabled:opacity-50 disabled:pointer-events-none"
+						placeholder="Confirm password"
+						required
+						aria-describedby="password-error"
+						@input="reset()"
+					/>
+					<div
+						class="absolute inset-y-0 end-0 
+                        pointer-events-none pe-3 pt-3"
+						x-show="errMsg"
+						x-cloak
+					>
+						<svg
+							class="size-5 text-red"
+							width="16"
+							height="16"
+							fill="currentColor"
+							viewBox="0 0 16 16"
+							aria-hidden="true"
+						>
+							<path
+								d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8 
+                                4a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0
+                                0 1.1 0l.35-3.507A.905.905 0 0 0 8 4zm.002 6a1
+                                1 0 1 0 0 2 1 1 0 0 0 0-2z"
+							></path>
+						</svg>
+					</div>
+				</div>
+				<p
+					class="text-center text-xs text-red mt-2"
+					id="password-error"
+					x-show="errMsg"
+					x-cloak
+					x-text="errMsg"
+				></p>
+			</div>
+			<button
+				x-bind:disabled="submitted"
+				x-text="buttontext"
+				type="submit"
+				class="w-full py-3 px-4 inline-flex justify-center items-center 
+                gap-x-2 rounded-lg border border-transparent transition
+                bg-blue hover:bg-blue/75 text-mantle hover:cursor-pointer
+                disabled:bg-blue/60 disabled:cursor-default"
+			></button>
+			<button
+				type="button"
+				class="w-full py-3 px-4 inline-flex justify-center items-center 
+                gap-x-2 rounded-lg border border-transparent transition
+                bg-surface2 hover:bg-surface1 hover:cursor-pointer
+                disabled:cursor-default"
+				@click="showConfirmPasswordModal=false"
+			>Cancel</button>
+		</div>
+	</form>
+}

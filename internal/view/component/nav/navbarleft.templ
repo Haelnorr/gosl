@@ -1,0 +1,19 @@
+package nav
+
+// Returns the left portion of the navbar
+templ navLeft(navItems []NavItem) {
+	<nav aria-label="Global" class="hidden sm:block">
+		<ul class="flex items-center gap-6 text-xl">
+			for _, item := range navItems {
+				<li>
+					<a
+						class="text-subtext1 hover:text-green transition"
+						href={ templ.SafeURL(item.href) }
+					>
+						{ item.name }
+					</a>
+				</li>
+			}
+		</ul>
+	</nav>
+}

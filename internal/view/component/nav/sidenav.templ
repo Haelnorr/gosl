@@ -1,0 +1,53 @@
+package nav
+
+import "gosl/pkg/contexts"
+
+// Returns the mobile version of the navbar thats only visible when activated
+templ sideNav(navItems []NavItem) {
+	{{ user := contexts.GetUser(ctx) }}
+	<div
+		x-show="open"
+		x-transition
+		class="absolute w-full bg-mantle sm:hidden z-10"
+	>
+		<div class="px-4 py-6">
+			<ul class="space-y-1">
+				for _, item := range navItems {
+					<li>
+						<a
+							href={ templ.SafeURL(item.href) }
+							class="block rounded-lg  px-4 py-2 text-lg
+                            bg-surface0 text-text transition hover:bg-surface2"
+						>
+							{ item.name }
+						</a>
+					</li>
+				}
+			</ul>
+		</div>
+		if user == nil {
+			<div class="px-4 pb-6">
+				<ul class="space-y-1">
+					<li class="flex justify-center items-center gap-2">
+						<a
+							class="w-26 px-4 py-2 rounded-lg
+                        bg-green text-mantle  transition hover:bg-green/75
+                        text-center"
+							href="/login"
+						>
+							Login
+						</a>
+						<a
+							class="w-26 px-4 py-2 rounded-lg
+                        bg-blue text-mantle  transition hover:bg-blue/75
+                        text-center"
+							href="/register"
+						>
+							Register
+						</a>
+					</li>
+				</ul>
+			</div>
+		}
+	</div>
+}

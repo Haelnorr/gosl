@@ -1,0 +1,107 @@
+package layout
+
+import "gosl/internal/view/component/nav"
+import "gosl/internal/view/component/footer"
+import "gosl/internal/view/component/popup"
+
+// Global page layout. Includes HTML document settings, header tags
+// navbar and footer
+templ Global(title string) {
+	<!DOCTYPE html>
+	<html
+		lang="en"
+		x-data="{
+            theme: localStorage.getItem('theme')
+            || 'system'}"
+		x-init="$watch('theme', (val) => localStorage.setItem('theme', val))"
+		x-bind:class="{'dark': theme === 'dark' || (theme === 'system' &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches)}"
+	>
+		<head>
+			<script>
+                (function () {
+                    let theme = localStorage.getItem("theme") || "system";
+                    if (theme === "system") {
+                        theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+                    }
+                    if (theme === "dark") {
+                        document.documentElement.classList.add("dark");
+                    } else {
+                        document.documentElement.classList.remove("dark");
+                    }
+                })();
+            </script>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ title }</title>
+			<link rel="icon" type="image/x-icon" href="/static/favicon.ico"/>
+			<link href="/static/css/output.css" rel="stylesheet"/>
+			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+			<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.x.x/dist/cdn.min.js"></script>
+			<script src="https://unpkg.com/alpinejs" defer></script>
+			<script>
+                // uncomment this line to enable logging of htmx events
+                // htmx.logAll();
+            </script>
+			<script>
+                const bodyData = {
+                    showError500: false,
+                    showError503: false,
+                    showConfirmPasswordModal: false,
+                    handleHtmxBeforeOnLoad(event) {
+                        const requestPath = event.detail.pathInfo.requestPath;
+                        if (requestPath === "/reauthenticate") {
+                            // handle password incorrect on refresh attempt
+                            if (event.detail.xhr.status === 445) {
+                                event.detail.shouldSwap = true;
+                                event.detail.isError = false;
+                            } else if (event.detail.xhr.status === 200) {
+                                this.showConfirmPasswordModal = false;
+                            }
+                        }
+                    },
+                    // handle errors from the server on HTMX requests
+                    handleHtmxError(event) {
+                        const errorCode = event.detail.errorInfo.error;
+                  
+                        // internal server error 
+                        if (errorCode.includes('Code 500')) {
+                            this.showError500 = true;
+                            setTimeout(() => this.showError500 = false, 6000);
+                        }
+                        // service not available error
+                        if (errorCode.includes('Code 503')) {
+                            this.showError503 = true;
+                            setTimeout(() => this.showError503 = false, 6000);
+                        }
+                  
+                        // user is authorized but needs to refresh their login
+                        if (errorCode.includes('Code 444')) {
+                            this.showConfirmPasswordModal = true;
+                        }
+                    },
+                };
+            </script>
+		</head>
+		<body
+			class="bg-base text-text ubuntu-mono-regular overflow-x-hidden"
+			x-data="bodyData"
+			x-on:htmx:error="handleHtmxError($event)"
+			x-on:htmx:before-on-load="handleHtmxBeforeOnLoad($event)"
+		>
+			@popup.Error500Popup()
+			@popup.Error503Popup()
+			@popup.ConfirmPasswordModal()
+			<div
+				id="main-content"
+				class="flex flex-col h-screen justify-between"
+			>
+				@nav.Navbar()
+				<div id="page-content" class="mb-auto md:px-5 md:pt-5">
+					{ children... }
+				</div>
+				@footer.Footer()
+			</div>
+		</body>
+	</html>
+}

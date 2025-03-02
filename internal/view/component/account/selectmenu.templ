@@ -1,0 +1,91 @@
+package account
+
+import "fmt"
+
+type MenuItem struct {
+	name string
+	href string
+}
+
+func getMenuItems() []MenuItem {
+	return []MenuItem{
+		{
+			name: "General",
+			href: "general",
+		},
+		{
+			name: "Security",
+			href: "security",
+		},
+		{
+			name: "Preferences",
+			href: "preferences",
+		},
+	}
+}
+
+templ SelectMenu(activePage string) {
+	{{
+	menuItems := getMenuItems()
+	page := fmt.Sprintf("{page:'%s'}", activePage)
+	}}
+	<form
+		hx-post="/account-select-page"
+		hx-target="#account-container"
+		hx-swap="outerHTML"
+		class="relative"
+	>
+		<div
+			class="bg-surface0 border-e border-overlay0 ease-in-out
+            absolute top-0 left-0 z-1
+            rounded-l-xl h-full overflow-hidden transition-all duration-300"
+			x-bind:style="(open || big) ? 'width: 200px;' : 'width: 40px;'"
+		>
+			<div x-show="!big">
+				<button
+					type="button"
+					@click="open = !open"
+					class="block rounded-lg p-2.5 md:hidden transition
+                    bg-surface0 text-subtext0 hover:text-overlay2/75"
+				>
+					<span class="sr-only">Toggle menu</span>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="size-5"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M4 6h16M4 12h16M4 18h16"
+						></path>
+					</svg>
+				</button>
+			</div>
+			<div class="px-4 py-6" x-show="(open || big)">
+				<ul class="mt-6 space-y-1" x-data={ page }>
+					for _, item := range menuItems {
+						{{
+	activebind := fmt.Sprintf("page === '%s' && 'bg-mantle'", item.name)
+						}}
+						<li>
+							<button
+								type="submit"
+								name="subpage"
+								value={ item.name }
+								class="block rounded-lg px-4 py-2 text-md
+                            hover:bg-mantle hover:cursor-pointer"
+								:class={ activebind }
+							>
+								{ item.name }
+							</button>
+						</li>
+					}
+				</ul>
+			</div>
+		</div>
+	</form>
+}

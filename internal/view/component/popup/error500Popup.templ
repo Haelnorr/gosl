@@ -1,0 +1,63 @@
+package popup
+
+templ Error500Popup() {
+	<div
+		x-cloak
+		x-show="showError500"
+		class="absolute w-82 left-0 right-0 mt-20 mr-5 ml-auto"
+		x-transition:enter="transform translate-x-[100%] opacity-0 duration-200"
+		x-transition:enter-start="opacity-0 translate-x-[100%]"
+		x-transition:enter-end="opacity-100 translate-x-0"
+		x-transition:leave="opacity-0 duration-200"
+		x-transition:leave-start="opacity-100 translate-x-0"
+		x-transition:leave-end="opacity-0 translate-x-[100%]"
+	>
+		<div
+			role="alert"
+			class="rounded-sm bg-dark-red p-4"
+		>
+			<div class="flex justify-between">
+				<div class="flex items-center gap-2 text-red w-fit">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						viewBox="0 0 24 24"
+						fill="currentColor"
+						class="size-5"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 
+                            12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 
+                            0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 
+                            0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 
+                            01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z"
+							clip-rule="evenodd"
+						></path>
+					</svg>
+					<strong class="block font-medium">Something went wrong </strong>
+				</div>
+				<div class="flex">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke-width="1.5"
+						stroke="currentColor"
+						class="size-6 text-subtext0 hover:cursor-pointer"
+						@click="showError500=false"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M6 18L18 6M6 6l12 12"
+						></path>
+					</svg>
+				</div>
+			</div>
+			<p class="mt-2 text-sm text-red">
+				An error occured on the server. Please try again later,
+				or contact an administrator
+			</p>
+		</div>
+	</div>
+}

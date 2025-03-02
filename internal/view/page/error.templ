@@ -1,0 +1,34 @@
+package page
+
+import "gosl/internal/view/layout"
+import "strconv"
+
+// Page template for Error pages. Error code should be a HTTP status code as
+// a string, and err should be the corresponding response title.
+// Message is a custom error message displayed below the code and error.
+templ Error(code int, err string, message string) {
+	@layout.Global(err) {
+		<div
+			class="grid mt-24 left-0 right-0 top-0 bottom-0 
+            place-content-center bg-base px-4"
+		>
+			<div class="text-center">
+				<h1
+					class="text-9xl text-text"
+				>{ strconv.Itoa(code) }</h1>
+				<p
+					class="text-2xl font-bold tracking-tight text-subtext1
+                    sm:text-4xl"
+				>{ err }</p>
+				<p
+					class="mt-4 text-subtext0"
+				>{ message }</p>
+				<a
+					href="/"
+					class="mt-6 inline-block rounded-lg bg-mauve px-5 py-3 
+                    text-sm text-crust transition hover:bg-mauve/75"
+				>Go to homepage</a>
+			</div>
+		</div>
+	}
+}

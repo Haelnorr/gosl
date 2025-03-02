@@ -1,0 +1,122 @@
+package nav
+
+import "gosl/pkg/contexts"
+
+type ProfileItem struct {
+	name string // Label to display
+	href string // Link reference
+}
+
+// Return the list of profile links
+func getProfileItems() []ProfileItem {
+	return []ProfileItem{
+		{
+			name: "Profile",
+			href: "/profile",
+		},
+		{
+			name: "Account",
+			href: "/account",
+		},
+	}
+}
+
+// Returns the right portion of the navbar
+templ navRight() {
+	{{ user := contexts.GetUser(ctx) }}
+	{{ items := getProfileItems() }}
+	<div class="flex items-center gap-2">
+		<div class="sm:flex sm:gap-2">
+			if user != nil {
+				<div x-data="{ isActive: false }" class="relative">
+					<div
+						class="inline-flex items-center overflow-hidden
+                        rounded-lg bg-sapphire hover:bg-sapphire/75 transition"
+					>
+						<button
+							x-on:click="isActive = !isActive"
+							class="h-full py-2 px-4 text-mantle hover:cursor-pointer"
+						>
+							<span class="sr-only">Profile</span>
+							{ user.Username }
+						</button>
+					</div>
+					<div
+						class="absolute end-0 z-10 mt-2 w-36 divide-y 
+                        divide-surface2 rounded-lg border border-surface1 
+                        bg-surface0 shadow-lg"
+						role="menu"
+						x-cloak
+						x-transition
+						x-show="isActive"
+						x-on:click.away="isActive = false"
+						x-on:keydown.escape.window="isActive = false"
+					>
+						<div class="p-2">
+							for _, item := range items {
+								<a
+									href={ templ.SafeURL(item.href) }
+									class="block rounded-lg px-4 py-2 text-md 
+                                    hover:bg-crust"
+									role="menuitem"
+								>
+									{ item.name }
+								</a>
+							}
+						</div>
+						<div class="p-2">
+							<form hx-post="/logout">
+								<button
+									type="submit"
+									class="flex w-full items-center gap-2
+                                    rounded-lg px-4 py-2 text-md text-red 
+                                    hover:bg-red/25 hover:cursor-pointer"
+									role="menuitem"
+									@click="isActive=false"
+								>
+									Logout
+								</button>
+							</form>
+						</div>
+					</div>
+				</div>
+			} else {
+				<a
+					class="hidden rounded-lg px-4 py-2 sm:block 
+                bg-green hover:bg-green/75 text-mantle transition"
+					href="/login"
+				>
+					Login
+				</a>
+				<a
+					class="hidden rounded-lg px-4 py-2 sm:block
+                bg-blue text-mantle hover:bg-blue/75 transition"
+					href="/register"
+				>
+					Register
+				</a>
+			}
+		</div>
+		<button
+			@click="open = !open"
+			class="block rounded-lg p-2.5 sm:hidden transition
+            bg-surface0 text-subtext0 hover:text-overlay2/75"
+		>
+			<span class="sr-only">Toggle menu</span>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="size-5"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				stroke-width="2"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					d="M4 6h16M4 12h16M4 18h16"
+				></path>
+			</svg>
+		</button>
+	</div>
+}

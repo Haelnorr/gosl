@@ -1,0 +1,10 @@
+package page
+
+import "gosl/internal/view/layout"
+import "gosl/internal/view/component/account"
+
+templ Account(subpage string) {
+	@layout.Global("Account - " + subpage) {
+		@account.AccountContainer(subpage)
+	}
+}

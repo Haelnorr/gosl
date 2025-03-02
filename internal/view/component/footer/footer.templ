@@ -1,0 +1,120 @@
+package footer
+
+type FooterItem struct {
+	name string
+	href string
+}
+
+// Specify the links to show in the footer
+func getFooterItems() []FooterItem {
+	return []FooterItem{
+		{
+			name: "About",
+			href: "/about",
+		},
+		{
+			name: "Github",
+			href: "https://github.com/haelnorr/gosl",
+		},
+	}
+}
+
+// Returns the template fragment for the Footer
+templ Footer() {
+	<footer class="bg-mantle mt-10">
+		<div
+			class="relative mx-auto max-w-screen-xl px-4 py-8 sm:px-6 lg:px-8"
+		>
+			<div class="absolute end-4 top-4 sm:end-6 lg:end-8">
+				<a
+					class="inline-block rounded-full bg-teal p-2 text-crust
+                    shadow-sm transition hover:bg-teal/75"
+					href="#main-content"
+				>
+					<span class="sr-only">Back to top</span>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="size-5"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 
+                            3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 
+                            4a1 1 0 010 1.414z"
+							clip-rule="evenodd"
+						></path>
+					</svg>
+				</a>
+			</div>
+			<div class="lg:flex lg:items-end lg:justify-between">
+				<div>
+					<div class="flex justify-center text-text lg:justify-start">
+						// TODO: logo/branding here
+						<span class="text-2xl">GoSL</span>
+					</div>
+					<p
+						class="mx-auto max-w-md text-center leading-relaxed
+                        text-subtext0"
+					>League Stats and Manager for Oceanic Slapshot League</p>
+				</div>
+				<ul
+					class="mt-12 flex flex-wrap justify-center gap-6 md:gap-8
+                    lg:mt-0 lg:justify-end lg:gap-12"
+				>
+					for _, item := range getFooterItems() {
+						<li>
+							<a
+								class="transition hover:text-subtext1"
+								href={ templ.SafeURL(item.href) }
+							>{ item.name }</a>
+						</li>
+					}
+				</ul>
+			</div>
+			<div class="lg:flex lg:items-end lg:justify-between">
+				<div>
+					<p class="mt-4 text-center text-sm text-overlay0">
+						by Haelnorr
+					</p>
+				</div>
+				<div>
+					<div class="mt-2 text-center">
+						<label
+							for="theme-select"
+							class="hidden lg:inline"
+						>Theme</label>
+						<select
+							name="ThemeSelect"
+							id="theme-select"
+							class="mt-1.5 inline rounded-lg bg-surface0 p-2 w-fit"
+							x-model="theme"
+						>
+							<template
+								x-for="themeopt in [
+                                        'dark',
+                                        'light',
+                                        'system',
+                                    ]"
+							>
+								<option
+									x-text="displayThemeName(themeopt)"
+									:value="themeopt"
+									:selected="theme === themeopt"
+								></option>
+							</template>
+						</select>
+						<script>
+                            const displayThemeName = (value) => {
+                                if (value === "dark") return "Dark (Mocha)";
+                                if (value === "light") return "Light (Latte)";
+                                if (value === "system") return "System";
+                            }
+                        </script>
+					</div>
+				</div>
+			</div>
+		</div>
+	</footer>
+}
