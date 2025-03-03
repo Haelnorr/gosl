@@ -1,51 +1,14 @@
 package bot
 
 import (
-	"gosl/internal/commands"
-
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
 )
 
-type command struct {
-	Name        string
-	Description string
-	Handler     commands.Handler
-	Options     []*discordgo.ApplicationCommandOption
-}
-
 func (b *Bot) setupCommands() {
 	b.commands = []*command{
-		{
-			Name:        "test",
-			Description: "Test",
-			Handler:     commands.Test(b.logger, b.files),
-		},
-		{
-			Name:        "uploadlogs",
-			Description: "Upload match logs",
-			Handler:     commands.UploadLogs(b.logger, b.files),
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionAttachment,
-					Name:        "period1",
-					Description: "Period 1 log file",
-					Required:    true,
-				},
-				// {
-				// 	Type:        discordgo.ApplicationCommandOptionAttachment,
-				// 	Name:        "period2",
-				// 	Description: "Period 2 log file",
-				// 	Required:    true,
-				// },
-				// {
-				// 	Type:        discordgo.ApplicationCommandOptionAttachment,
-				// 	Name:        "period3",
-				// 	Description: "Period 3 log file",
-				// 	Required:    true,
-				// },
-			},
-		},
+		cmdTest(b),
+		cmdUploadLogs(b),
 	}
 }
 
