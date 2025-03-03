@@ -13,7 +13,7 @@ type Token interface {
 	GetJTI() uuid.UUID
 	GetEXP() int64
 	GetScope() string
-	GetUser(ctx context.Context, tx *db.SafeTX) (*models.User, error)
+	GetUser(ctx context.Context, tx db.SafeTX) (*models.User, error)
 }
 
 // Access token
@@ -39,14 +39,14 @@ type RefreshToken struct {
 	Scope string    // Should be "refresh"
 }
 
-func (a AccessToken) GetUser(ctx context.Context, tx *db.SafeTX) (*models.User, error) {
+func (a AccessToken) GetUser(ctx context.Context, tx db.SafeTX) (*models.User, error) {
 	user, err := models.GetUserFromID(ctx, tx, a.SUB)
 	if err != nil {
 		return nil, errors.Wrap(err, "db.GetUserFromID")
 	}
 	return user, nil
 }
-func (r RefreshToken) GetUser(ctx context.Context, tx *db.SafeTX) (*models.User, error) {
+func (r RefreshToken) GetUser(ctx context.Context, tx db.SafeTX) (*models.User, error) {
 	user, err := models.GetUserFromID(ctx, tx, r.SUB)
 	if err != nil {
 		return nil, errors.Wrap(err, "db.GetUserFromID")

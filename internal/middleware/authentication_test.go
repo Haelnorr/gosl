@@ -22,9 +22,9 @@ func TestAuthenticationMiddleware(t *testing.T) {
 	logger := tests.NilLogger()
 	ver, err := strconv.ParseInt(cfg.DBName, 10, 0)
 	require.NoError(t, err)
-	conn, err := tests.SetupTestDB(ver)
+	wconn, rconn, err := tests.SetupTestDB(ver)
 	require.NoError(t, err)
-	sconn := db.MakeSafe(conn, logger)
+	sconn := db.MakeSafe(wconn, rconn, logger)
 	defer sconn.Close()
 
 	// Handler to check outcome of Authentication middleware

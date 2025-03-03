@@ -7,6 +7,7 @@ require (
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/joho/godotenv v1.5.1
+	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/pkg/errors v0.9.1
 	github.com/pressly/goose/v3 v3.24.1
 	github.com/rs/zerolog v1.33.0

@@ -35,7 +35,6 @@ func cmdUploadLogs(b *Bot) *command {
 	)
 }
 
-// TODO: rewrite responses, this shit broke
 func handleUploadLogs(b *Bot) handler {
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// TODO: check user has permission to upload logs
@@ -45,6 +44,7 @@ func handleUploadLogs(b *Bot) handler {
 		logs := []*gamelogs.Gamelog{}
 
 		for _, attachment := range attachments {
+			// TODO: make this concurrent
 			resp, err := http.Get(attachment.URL)
 			if err != nil {
 				b.logger.Error().Err(err).Str("url", attachment.URL).
@@ -72,6 +72,6 @@ func handleUploadLogs(b *Bot) handler {
 
 		// TODO: actually do something with the log data
 
-		replyMessage("Log files uploaded", b.logger, s, i)
+		b.staticReply("Log files uploaded", s, i)
 	}
 }

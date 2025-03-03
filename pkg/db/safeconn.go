@@ -10,7 +10,8 @@ import (
 )
 
 type SafeConn struct {
-	db                  *sql.DB
+	wconn               *sql.DB
+	rconn               *sql.DB
 	readLockCount       uint32
 	globalLockStatus    uint32
 	globalLockRequested uint32
@@ -18,8 +19,8 @@ type SafeConn struct {
 }
 
 // Make the provided db handle safe and attach a logger to it
-func MakeSafe(db *sql.DB, logger *zerolog.Logger) *SafeConn {
-	return &SafeConn{db: db, logger: logger}
+func MakeSafe(wconn *sql.DB, rconn *sql.DB, logger *zerolog.Logger) *SafeConn {
+	return &SafeConn{wconn: wconn, rconn: rconn, logger: logger}
 }
 
 // Attempts to acquire a global lock on the database connection
@@ -61,7 +62,7 @@ func (conn *SafeConn) releaseReadLock() {
 
 // Starts a new transaction based on the current context. Will cancel if
 // the context is closed/cancelled/done
-func (conn *SafeConn) Begin(ctx context.Context) (*SafeTX, error) {
+func (conn *SafeConn) Begin(ctx context.Context) (*SafeWTX, error) {
 	lockAcquired := make(chan struct{})
 	lockCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -79,12 +80,44 @@ func (conn *SafeConn) Begin(ctx context.Context) (*SafeTX, error) {
 
 	select {
 	case <-lockAcquired:
-		tx, err := conn.db.BeginTx(ctx, nil)
+		tx, err := conn.wconn.BeginTx(ctx, nil)
 		if err != nil {
 			conn.releaseReadLock()
 			return nil, err
 		}
-		return &SafeTX{tx: tx, sc: conn}, nil
+		return &SafeWTX{tx: tx, sc: conn}, nil
+	case <-ctx.Done():
+		cancel()
+		return nil, errors.New("Transaction time out due to database lock")
+	}
+}
+
+// Starts a new READONLY transaction based on the current context. Will cancel if
+// the context is closed/cancelled/done
+func (conn *SafeConn) RBegin(ctx context.Context) (*SafeRTX, error) {
+	lockAcquired := make(chan struct{})
+	lockCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	go func() {
+		select {
+		case <-lockCtx.Done():
+			return
+		default:
+			if conn.acquireReadLock() {
+				close(lockAcquired)
+			}
+		}
+	}()
+
+	select {
+	case <-lockAcquired:
+		tx, err := conn.rconn.BeginTx(ctx, nil)
+		if err != nil {
+			conn.releaseReadLock()
+			return nil, err
+		}
+		return &SafeRTX{tx: tx, sc: conn}, nil
 	case <-ctx.Done():
 		cancel()
 		return nil, errors.New("Transaction time out due to database lock")
@@ -125,5 +158,5 @@ func (conn *SafeConn) Close() error {
 	conn.acquireGlobalLock()
 	defer conn.releaseGlobalLock()
 	conn.logger.Debug().Msg("Closing database connection")
-	return conn.db.Close()
+	return conn.wconn.Close()
 }

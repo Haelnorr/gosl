@@ -18,9 +18,9 @@ func TestSafeConn(t *testing.T) {
 	logger := tests.NilLogger()
 	ver, err := strconv.ParseInt(cfg.DBName, 10, 0)
 	require.NoError(t, err)
-	conn, err := tests.SetupTestDB(ver)
+	wconn, rconn, err := tests.SetupTestDB(ver)
 	require.NoError(t, err)
-	sconn := MakeSafe(conn, logger)
+	sconn := MakeSafe(wconn, rconn, logger)
 	defer sconn.Close()
 
 	t.Run("Global lock waits for read locks to finish", func(t *testing.T) {
@@ -87,9 +87,9 @@ func TestSafeTX(t *testing.T) {
 	logger := tests.NilLogger()
 	ver, err := strconv.ParseInt(cfg.DBName, 10, 0)
 	require.NoError(t, err)
-	conn, err := tests.SetupTestDB(ver)
+	wconn, rconn, err := tests.SetupTestDB(ver)
 	require.NoError(t, err)
-	sconn := MakeSafe(conn, logger)
+	sconn := MakeSafe(wconn, rconn, logger)
 	defer sconn.Close()
 
 	t.Run("Commit releases lock", func(t *testing.T) {
@@ -106,12 +106,12 @@ func TestSafeTX(t *testing.T) {
 		tx.Rollback()
 		assert.Equal(t, uint32(0), sconn.readLockCount)
 	})
-	t.Run("Multiple TX can gain read lock", func(t *testing.T) {
-		tx1, err := sconn.Begin(t.Context())
+	t.Run("Multiple RTX can gain read lock", func(t *testing.T) {
+		tx1, err := sconn.RBegin(t.Context())
 		require.NoError(t, err)
-		tx2, err := sconn.Begin(t.Context())
+		tx2, err := sconn.RBegin(t.Context())
 		require.NoError(t, err)
-		tx3, err := sconn.Begin(t.Context())
+		tx3, err := sconn.RBegin(t.Context())
 		require.NoError(t, err)
 		tx1.Commit()
 		tx2.Commit()

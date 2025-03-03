@@ -12,7 +12,7 @@ import (
 // Creates a new user in the database and returns a pointer
 func CreateNewUser(
 	ctx context.Context,
-	tx *db.SafeTX,
+	tx *db.SafeWTX,
 	username string,
 	password string,
 ) (*User, error) {
@@ -35,7 +35,7 @@ func CreateNewUser(
 // Fetches data from the users table using "WHERE column = 'value'"
 func fetchUserData(
 	ctx context.Context,
-	tx *db.SafeTX,
+	tx db.SafeTX,
 	column string,
 	value interface{},
 ) (*sql.Rows, error) {
@@ -78,7 +78,7 @@ func scanUserRow(user *User, rows *sql.Rows) error {
 
 // Queries the database for a user matching the given username.
 // Query is case insensitive
-func GetUserFromUsername(ctx context.Context, tx *db.SafeTX, username string) (*User, error) {
+func GetUserFromUsername(ctx context.Context, tx db.SafeTX, username string) (*User, error) {
 	rows, err := fetchUserData(ctx, tx, "username", username)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetchUserData")
@@ -93,7 +93,7 @@ func GetUserFromUsername(ctx context.Context, tx *db.SafeTX, username string) (*
 }
 
 // Queries the database for a user matching the given ID.
-func GetUserFromID(ctx context.Context, tx *db.SafeTX, id int) (*User, error) {
+func GetUserFromID(ctx context.Context, tx db.SafeTX, id int) (*User, error) {
 	rows, err := fetchUserData(ctx, tx, "id", id)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetchUserData")
@@ -108,7 +108,7 @@ func GetUserFromID(ctx context.Context, tx *db.SafeTX, id int) (*User, error) {
 }
 
 // Checks if the given username is unique. Returns true if not taken
-func CheckUsernameUnique(ctx context.Context, tx *db.SafeTX, username string) (bool, error) {
+func CheckUsernameUnique(ctx context.Context, tx db.SafeTX, username string) (bool, error) {
 	query := `SELECT 1 FROM users WHERE username = ? COLLATE NOCASE LIMIT 1`
 	rows, err := tx.Query(ctx, query, username)
 	if err != nil {

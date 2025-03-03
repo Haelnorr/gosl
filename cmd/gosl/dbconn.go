@@ -22,11 +22,11 @@ func setupDBConn(
 		if err != nil {
 			return nil, errors.Wrap(err, "strconv.ParseInt")
 		}
-		testconn, err := tests.SetupTestDB(ver)
+		wconn, rconn, err := tests.SetupTestDB(ver)
 		if err != nil {
 			return nil, errors.Wrap(err, "tests.SetupTestDB")
 		}
-		conn := db.MakeSafe(testconn, logger)
+		conn := db.MakeSafe(wconn, rconn, logger)
 		return conn, nil
 	} else {
 		conn, err := db.ConnectToDatabase(config.DBName, logger)

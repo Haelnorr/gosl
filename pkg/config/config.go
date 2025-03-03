@@ -31,6 +31,7 @@ type Config struct {
 	LogOutput          string        // "file", "console", or "both". Defaults to console
 	LogDir             string        // Path to create log files
 	DiscordBotToken    string        // Discord Bot Token
+	DiscordGuildID     string        // ID of the discord server
 }
 
 // Load the application configuration and get a pointer to the Config object
@@ -98,6 +99,7 @@ func GetConfig(args map[string]string) (*Config, error) {
 		LogOutput:          logOutput,
 		LogDir:             GetEnvDefault("LOG_DIR", ""),
 		DiscordBotToken:    os.Getenv("DISCORD_BOT_TOKEN"),
+		DiscordGuildID:     os.Getenv("DISCORD_GUILD_ID"),
 	}
 
 	if config.SecretKey == "" && args["dbver"] != "true" {
@@ -105,6 +107,9 @@ func GetConfig(args map[string]string) (*Config, error) {
 	}
 	if config.DiscordBotToken == "" && args["dbver"] != "true" {
 		return nil, errors.New("Envar not set: DISCORD_BOT_TOKEN")
+	}
+	if config.DiscordGuildID == "" && args["dbver"] != "true" {
+		return nil, errors.New("Envar not set: DISCORD_GUILD_ID")
 	}
 
 	return config, nil

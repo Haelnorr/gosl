@@ -1,5 +1,5 @@
 .env
-*.db
+*.db*
 tmp/
 bin/
 *_templ.txt

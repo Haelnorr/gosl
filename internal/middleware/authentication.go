@@ -22,7 +22,7 @@ import (
 func refreshAuthTokens(
 	config *config.Config,
 	ctx context.Context,
-	tx *db.SafeTX,
+	tx *db.SafeWTX,
 	w http.ResponseWriter,
 	req *http.Request,
 	ref *jwt.RefreshToken,
@@ -55,7 +55,7 @@ func refreshAuthTokens(
 func getAuthenticatedUser(
 	config *config.Config,
 	ctx context.Context,
-	tx *db.SafeTX,
+	tx *db.SafeWTX,
 	w http.ResponseWriter,
 	r *http.Request,
 ) (*contexts.AuthenticatedUser, error) {
