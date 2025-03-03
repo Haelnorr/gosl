@@ -22,6 +22,7 @@ func Test_main(t *testing.T) {
 	var stdout bytes.Buffer
 	os.Setenv("SECRET_KEY", ".")
 	os.Setenv("DISCORD_BOT_TOKEN", ".")
+	os.Setenv("DISCORD_GUILD_ID", ".")
 	os.Setenv("HOST", "127.0.0.1")
 	os.Setenv("PORT", "3232")
 	runSrvErr := make(chan error)
