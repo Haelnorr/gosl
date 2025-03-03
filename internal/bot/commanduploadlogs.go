@@ -45,6 +45,7 @@ func handleUploadLogs(b *Bot) handler {
 		logs := []*gamelogs.Gamelog{}
 
 		for _, attachment := range attachments {
+			// TODO: make this concurrent
 			resp, err := http.Get(attachment.URL)
 			if err != nil {
 				b.logger.Error().Err(err).Str("url", attachment.URL).

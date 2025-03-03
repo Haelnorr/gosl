@@ -1,6 +1,8 @@
 package bot
 
 import (
+	"context"
+	"gosl/pkg/db"
 	"io/fs"
 
 	"github.com/bwmarrin/discordgo"
@@ -13,26 +15,39 @@ type Bot struct {
 	logger   *zerolog.Logger
 	commands []*command
 	files    *fs.FS
+	conn     *db.SafeConn
+	guildID  string
 }
 
-func NewBot(token string, logger *zerolog.Logger, fs *fs.FS) (*Bot, error) {
+func NewBot(
+	token string,
+	guildID string,
+	conn *db.SafeConn,
+	logger *zerolog.Logger,
+	fs *fs.FS,
+) (*Bot, error) {
 	session, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, errors.Wrap(err, "discordgo.New")
 	}
-	b := &Bot{session: session, logger: logger, files: fs}
+	b := &Bot{session: session, logger: logger, files: fs, conn: conn, guildID: guildID}
 	b.setupCommands()
 	return b, nil
 }
 
-func (b *Bot) Start() error {
+func (b *Bot) Start(ctx context.Context) error {
 	err := b.session.Open()
 	if err != nil {
 		return err
 	}
-	err = b.registerCommands()
+
+	err = b.setupAdminChannel(ctx)
 	if err != nil {
-		b.logger.Error().Err(err).Msg("Failed to register commands")
+		return errors.Wrap(err, "b.setupAdminChannel")
+	}
+	err = b.registerCommands(ctx)
+	if err != nil {
+		return errors.Wrap(err, "b.registerCommands")
 	}
 	return nil
 }

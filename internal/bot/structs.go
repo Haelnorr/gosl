@@ -2,7 +2,7 @@ package bot
 
 import "github.com/bwmarrin/discordgo"
 
-type handler func(s *discordgo.Session, i *discordgo.InteractionCreate)
+type handler = func(s *discordgo.Session, i *discordgo.InteractionCreate)
 
 type command struct {
 	Name        string

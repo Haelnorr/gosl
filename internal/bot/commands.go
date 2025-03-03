@@ -1,6 +1,8 @@
 package bot
 
 import (
+	"context"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
 )
@@ -12,7 +14,7 @@ func (b *Bot) setupCommands() {
 	}
 }
 
-func (b *Bot) registerCommands() error {
+func (b *Bot) registerCommands(ctx context.Context) error {
 	for _, cmd := range b.commands {
 		_, err := b.session.ApplicationCommandCreate(b.session.State.User.ID, "", &discordgo.ApplicationCommand{
 			Name:        cmd.Name,
@@ -26,16 +28,20 @@ func (b *Bot) registerCommands() error {
 		b.logger.Debug().Str("command", cmd.Name).Msg("Registering command")
 	}
 
-	b.session.AddHandler(b.handleInteractions)
+	b.session.AddHandler(b.handleCommandInteractions(ctx))
 	return nil
 }
 
-func (b *Bot) handleInteractions(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	for _, cmd := range b.commands {
-		if i.ApplicationCommandData().Name == cmd.Name {
-			cmd.Handler(s, i)
-			b.logger.Debug().Str("command", cmd.Name).Msg("Handled command")
-			return
+func (b *Bot) handleCommandInteractions(ctx context.Context) handler {
+	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		if i.Type == discordgo.InteractionApplicationCommand {
+			for _, cmd := range b.commands {
+				if i.ApplicationCommandData().Name == cmd.Name {
+					cmd.Handler(s, i)
+					b.logger.Debug().Str("command", cmd.Name).Msg("Handled command")
+					return
+				}
+			}
 		}
 	}
 }
