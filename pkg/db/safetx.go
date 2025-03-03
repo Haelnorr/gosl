@@ -25,6 +25,18 @@ func (stx *SafeTX) Query(
 	return stx.tx.QueryContext(ctx, query, args...)
 }
 
+// Query a row from the database inside the transaction
+func (stx *SafeTX) QueryRow(
+	ctx context.Context,
+	query string,
+	args ...interface{},
+) (*sql.Row, error) {
+	if stx.tx == nil {
+		return nil, errors.New("Cannot query without a transaction")
+	}
+	return stx.tx.QueryRowContext(ctx, query, args...), nil
+}
+
 // Exec a statement on the database inside the transaction
 func (stx *SafeTX) Exec(
 	ctx context.Context,
