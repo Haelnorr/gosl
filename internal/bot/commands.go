@@ -11,19 +11,40 @@ type command struct {
 	Name        string
 	Description string
 	Handler     commands.Handler
+	Options     []*discordgo.ApplicationCommandOption
 }
 
 func (b *Bot) setupCommands() {
 	b.commands = []*command{
 		{
-			Name:        "hi",
-			Description: "Say hi to the bot",
-			Handler:     commands.Hi(b.logger),
+			Name:        "test",
+			Description: "Test",
+			Handler:     commands.Test(b.logger, b.files),
 		},
 		{
-			Name:        "bye",
-			Description: "Say goodbye to the bot",
-			Handler:     commands.Bye(b.logger),
+			Name:        "uploadlogs",
+			Description: "Upload match logs",
+			Handler:     commands.UploadLogs(b.logger, b.files),
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionAttachment,
+					Name:        "period1",
+					Description: "Period 1 log file",
+					Required:    true,
+				},
+				// {
+				// 	Type:        discordgo.ApplicationCommandOptionAttachment,
+				// 	Name:        "period2",
+				// 	Description: "Period 2 log file",
+				// 	Required:    true,
+				// },
+				// {
+				// 	Type:        discordgo.ApplicationCommandOptionAttachment,
+				// 	Name:        "period3",
+				// 	Description: "Period 3 log file",
+				// 	Required:    true,
+				// },
+			},
 		},
 	}
 }
@@ -33,6 +54,7 @@ func (b *Bot) registerCommands() error {
 		_, err := b.session.ApplicationCommandCreate(b.session.State.User.ID, "", &discordgo.ApplicationCommand{
 			Name:        cmd.Name,
 			Description: cmd.Description,
+			Options:     cmd.Options,
 		})
 		if err != nil {
 			b.logger.Error().Err(err).Str("command", cmd.Name).Msg("Failed to register command")
@@ -42,24 +64,6 @@ func (b *Bot) registerCommands() error {
 	}
 
 	b.session.AddHandler(b.handleInteractions)
-	return nil
-}
-
-func (b *Bot) clearCommands() error {
-	commands, err := b.session.ApplicationCommands(b.session.State.User.ID, "")
-	if err != nil {
-		return errors.Wrap(err, "fetching existing commands")
-	}
-
-	for _, cmd := range commands {
-		err := b.session.ApplicationCommandDelete(b.session.State.User.ID, "", cmd.ID)
-		if err != nil {
-			b.logger.Error().Err(err).Str("command", cmd.Name).Msg("Failed to delete command")
-		} else {
-			b.logger.Debug().Str("command", cmd.Name).Msg("Deleted old command")
-		}
-	}
-
 	return nil
 }
 

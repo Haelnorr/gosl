@@ -94,7 +94,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 	handleMaintSignals(ctx, conn, config, logger, &maint)
 
 	// Initialize the discord bot
-	discordBot, err := bot.NewBot(config.DiscordBotToken, logger)
+	discordBot, err := bot.NewBot(config.DiscordBotToken, logger, &staticFS)
 	if err != nil {
 		return errors.Wrap(err, "bot.NewBot")
 	}

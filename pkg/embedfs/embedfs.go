@@ -3,7 +3,6 @@ package embedfs
 import (
 	"embed"
 	"io/fs"
-	"net/http"
 
 	"github.com/pkg/errors"
 )
@@ -12,10 +11,10 @@ import (
 var embeddedFiles embed.FS
 
 // Gets the embedded files
-func GetEmbeddedFS() (http.FileSystem, error) {
+func GetEmbeddedFS() (fs.FS, error) {
 	subFS, err := fs.Sub(embeddedFiles, "files")
 	if err != nil {
 		return nil, errors.Wrap(err, "fs.Sub")
 	}
-	return http.FS(subFS), nil
+	return subFS, nil
 }
