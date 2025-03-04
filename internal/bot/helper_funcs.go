@@ -3,6 +3,7 @@ package bot
 import (
 	"bytes"
 	"io/fs"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/rs/zerolog"
@@ -27,6 +28,8 @@ func replyMessage(
 	return nil
 }
 
+// Responds to the interaction with an ephemeral message that deletes after
+// 10 seconds
 func emphemeralMessage(
 	msg string,
 	logger *zerolog.Logger,
@@ -44,6 +47,15 @@ func emphemeralMessage(
 		logger.Error().Err(err).Str("msg", msg).Msg("Failed to respond")
 		return err
 	}
+	// Wait for 10 seconds before deleting
+	go func() {
+		time.Sleep(10 * time.Second) // Adjust timeout as needed
+		err := s.InteractionResponseDelete(i.Interaction)
+		if err != nil {
+			logger.Warn().Err(err).Str("msg", msg).
+				Msg("Failed to delete emphemeral message")
+		}
+	}()
 	return nil
 }
 
