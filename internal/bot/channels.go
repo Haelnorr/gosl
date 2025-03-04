@@ -13,13 +13,13 @@ const (
 	channelLeagueManager uint16 = 3
 )
 
-func addPurpose(ctx context.Context, tx *db.SafeTX, channelID string, purpose uint16) error {
+func addChannelPurpose(ctx context.Context, tx *db.SafeTX, channelID string, purpose uint16) error {
 	query := `INSERT INTO config_channels (channel_id, purpose) VALUES (?, ?) ON CONFLICT DO NOTHING;`
 	_, err := tx.Exec(ctx, query, channelID, purpose)
 	return err
 }
 
-func removePurpose(ctx context.Context, tx *db.SafeTX, channelID string, purpose uint16) error {
+func removeChannelPurpose(ctx context.Context, tx *db.SafeTX, channelID string, purpose uint16) error {
 	query := `DELETE FROM config_channels WHERE channel_id = ? AND purpose = ?;`
 	_, err := tx.Exec(ctx, query, channelID, purpose)
 	return err
@@ -51,4 +51,9 @@ func getChannelsForPurpose(
 	}
 
 	return channelIDs, nil
+}
+
+func (b *Bot) checkChannelExists(channelID string) bool {
+	_, err := b.session.Channel(channelID)
+	return err == nil
 }

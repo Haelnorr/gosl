@@ -66,7 +66,3 @@ SELECT 1 FROM config_roles WHERE
 	}
 	return err == nil, err
 }
-
-func getPermissions() {
-
-}

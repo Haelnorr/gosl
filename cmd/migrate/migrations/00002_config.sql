@@ -10,10 +10,16 @@ CREATE TABLE IF NOT EXISTS "config_channels" (
     channel_id TEXT NOT NULL,
     PRIMARY KEY(purpose, channel_id)
 ) STRICT;
+CREATE TABLE IF NOT EXISTS "config_messages" (
+    purpose INTEGER PRIMARY KEY,
+    message_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL
+) STRICT;
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE IF EXISTS "config_roles";
 DROP TABLE IF EXISTS "config_channels";
+DROP TABLE IF EXISTS "config_messages";
 -- +goose StatementEnd
