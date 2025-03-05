@@ -44,24 +44,23 @@ func (b *Bot) handleAdminChannelInteractions(ctx context.Context) handler {
 			case "log_channel_select":
 				b.logger.Debug().Msg("Handling log channel select interaction")
 				err = handleSelectLogChannelInteraction(ctx, tx, b.logger, s, i)
-				if err != nil {
-					msg := "Failed to update log channel"
-					smsg := err.Error()
-					b.logger.Error().Err(err).Msg(msg)
-					errorResponse(msg, &smsg, b.files, s, i)
-				}
-				tx.Commit()
 			case "admin_role_select":
-				// TODO: update the roles in the db
 				b.logger.Debug().Msg("Handling admin roles select interaction")
-				_ = i.MessageComponentData().Values
-				emphemeralMessage("updated admin roles", b.logger, s, i)
+				err = handleSelectAdminRolesInteraction(ctx, tx, b.logger, s, i)
 			case "manager_role_select":
-				// TODO: update the roles in the db
 				b.logger.Debug().Msg("Handling manager roles select interaction")
-				_ = i.MessageComponentData().Values
-				emphemeralMessage("updated admin roles", b.logger, s, i)
+				err = handleSelectManagerRolesInteraction(ctx, tx, b.logger, s, i)
+			default:
+				err = errors.New("No handler for interaction")
 			}
+			if err != nil {
+				msg := "Interaction failed"
+				smsg := err.Error()
+				b.logger.Error().Err(err).Msg(msg)
+				errorResponse(msg, &smsg, b.files, s, i)
+				return
+			}
+			tx.Commit()
 		}
 	}
 }

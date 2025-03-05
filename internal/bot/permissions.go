@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -65,4 +66,36 @@ SELECT 1 FROM config_roles WHERE
 		return false, nil
 	}
 	return err == nil, err
+}
+
+// Grants the permission to the provided roles and removes it from any roles
+// not provided
+func setRolesForPermission(
+	ctx context.Context,
+	tx *db.SafeWTX,
+	roles []string,
+	permid uint16,
+) error {
+	args := make([]interface{}, 0, len(roles)+1)
+	args = append(args, permid)
+	for _, role := range roles {
+		args = append(args, role)
+		err := addPermission(ctx, tx, role, permid)
+		if err != nil {
+			return errors.Wrap(err, "addPermission")
+		}
+	}
+	query := `
+    DELETE FROM config_roles WHERE permission = ?
+    AND role_id NOT IN (` + strings.Repeat("?,", len(roles)-1) + `?);
+    `
+	if len(roles) == 0 {
+		query = `DELETE FROM config_roles WHERE permission = ?`
+		args = []interface{}{permid}
+	}
+	_, err := tx.Exec(ctx, query, args...)
+	if err != nil {
+		return errors.Wrap(err, "tx.Exec")
+	}
+	return nil
 }
