@@ -37,7 +37,7 @@ func setChannelPurpose(ctx context.Context, tx *db.SafeWTX, channelID string, pu
 		query = `UPDATE config_channels SET channel_id = ? WHERE purpose = ?;`
 		_, err = tx.Exec(ctx, query, channelID, purpose)
 	case count == 0:
-		query = `INSERT INTO config_channels (purpose, channel_id) VALUES (?,?);`
+		query = `INSERT INTO config_channels (channel_id, purpose) VALUES (?,?);`
 		_, err = tx.Exec(ctx, query, channelID, purpose)
 	default:
 		return errors.Errorf("Invalid row count for purpose %v. Expecting 0 or 1, got %v", purpose, count)
