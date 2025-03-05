@@ -119,24 +119,21 @@ func (b *Bot) editStaticMessage(
 }
 
 func (b *Bot) updateChannelMessage(
-	ch chan (error),
 	ctx context.Context,
 	contentsFunc MessageContentsFunc,
 	purpose uint16,
 	channelID string,
-) {
+) error {
 	components, err := contentsFunc(ctx)
 	if err != nil {
-		ch <- errors.Wrap(err, fmt.Sprintf("contentsFunc (purpose %v)", purpose))
-		return
+		return errors.Wrap(err, fmt.Sprintf("contentsFunc (purpose %v)", purpose))
 	}
 	err = b.addOrEditChannelMessage(
 		ctx, channelID, purpose, components)
 	if err != nil {
-		ch <- errors.Wrap(err, fmt.Sprintf("updateChannelMessage (purpose %v)", purpose))
-		return
+		return errors.Wrap(err, fmt.Sprintf("updateChannelMessage (purpose %v)", purpose))
 	}
-	ch <- nil
+	return nil
 }
 
 func (b *Bot) addOrEditChannelMessage(

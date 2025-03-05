@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -52,39 +53,64 @@ func findTestData() (string, error) {
 	}
 }
 
-func SetupTestDB(version int64) (*sql.DB, error) {
-	conn, err := sql.Open("sqlite", "file::memory:?cache=shared")
-	if err != nil {
-		return nil, errors.Wrap(err, "sql.Open")
-	}
-
+func migrateTestDB(wconn *sql.DB, version int64) error {
 	migrations, err := findMigrations()
 	if err != nil {
-		return nil, errors.Wrap(err, "findMigrations")
+		return errors.Wrap(err, "findMigrations")
 	}
-	provider, err := goose.NewProvider(goose.DialectSQLite3, conn, *migrations)
+	provider, err := goose.NewProvider(goose.DialectSQLite3, wconn, *migrations)
 	if err != nil {
-		return nil, errors.Wrap(err, "goose.NewProvider")
+		return errors.Wrap(err, "goose.NewProvider")
 	}
 	ctx := context.Background()
 	if _, err := provider.UpTo(ctx, version); err != nil {
-		return nil, errors.Wrap(err, "provider.UpTo")
+		return errors.Wrap(err, "provider.UpTo")
 	}
+	return nil
+}
 
-	// Load the test data
+func loadTestData(wconn *sql.DB) error {
 	dataPath, err := findTestData()
 	if err != nil {
-		return nil, errors.Wrap(err, "findSchema")
+		return errors.Wrap(err, "findSchema")
 	}
 	sqlBytes, err := os.ReadFile(dataPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "os.ReadFile")
+		return errors.Wrap(err, "os.ReadFile")
 	}
 	dataSQL := string(sqlBytes)
 
-	_, err = conn.Exec(dataSQL)
+	_, err = wconn.Exec(dataSQL)
 	if err != nil {
-		return nil, errors.Wrap(err, "tx.Exec")
+		return errors.Wrap(err, "tx.Exec")
 	}
-	return conn, nil
+	return nil
+}
+
+// Returns two db connection handles. First is a readwrite connection, second
+// is a read only connection
+func SetupTestDB(version int64) (*sql.DB, *sql.DB, error) {
+	opts := "_journal_mode=WAL&_synchronous=NORMAL&_txlock=IMMEDIATE"
+	file := fmt.Sprintf("file::memory:?cache=shared&%s", opts)
+	wconn, err := sql.Open("sqlite", file)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "sql.Open")
+	}
+
+	err = migrateTestDB(wconn, version)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "migrateTestDB")
+	}
+	err = loadTestData(wconn)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "loadTestData")
+	}
+
+	opts = "_synchronous=NORMAL&mode=ro"
+	file = fmt.Sprintf("file::memory:?cache=shared&%s", opts)
+	rconn, err := sql.Open("sqlite", file)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "sql.Open")
+	}
+	return wconn, rconn, nil
 }

@@ -22,12 +22,11 @@ func setupDBConn(
 		if err != nil {
 			return nil, errors.Wrap(err, "strconv.ParseInt")
 		}
-		testconn, err := tests.SetupTestDB(ver)
+		wconn, rconn, err := tests.SetupTestDB(ver)
 		if err != nil {
 			return nil, errors.Wrap(err, "tests.SetupTestDB")
 		}
-		// NOTE: testconn is setup as an in memory db, cant have 2 connections
-		conn := db.MakeSafe(testconn, testconn, logger)
+		conn := db.MakeSafe(wconn, rconn, logger)
 		return conn, nil
 	} else {
 		conn, err := db.ConnectToDatabase(config.DBName, logger)

@@ -112,6 +112,28 @@ func (stx *SafeTX) Exec(
 }
 
 // Commit the current transaction and release the read lock
+func (stx *SafeRTX) Commit() error {
+	if stx.tx == nil {
+		return errors.New("Cannot commit without a transaction")
+	}
+	err := stx.tx.Commit()
+	stx.tx = nil
+	stx.sc.releaseReadLock()
+	return err
+}
+
+// Abort the current transaction, releasing the read lock
+func (stx *SafeRTX) Rollback() error {
+	if stx.tx == nil {
+		return errors.New("Cannot rollback without a transaction")
+	}
+	err := stx.tx.Rollback()
+	stx.tx = nil
+	stx.sc.releaseReadLock()
+	return err
+}
+
+// Commit the current transaction and release the read lock
 func (stx *SafeTX) Commit() error {
 	if stx.tx == nil {
 		return errors.New("Cannot commit without a transaction")

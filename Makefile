@@ -21,7 +21,7 @@ dev:
 	air &\
 	tailwindcss -i ./pkg/embedfs/files/css/input.css -o ./pkg/embedfs/files/css/output.css --watch
 
-botdev:
+run:
 	make build
 	bin/gosl
 

@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -65,21 +66,26 @@ func (b *Bot) handleAdminChannelInteractions(ctx context.Context) handler {
 	}
 }
 
-func (b *Bot) setupAdminChannel(ctx context.Context) error {
+func (b *Bot) setupAdminChannel(
+	wg *sync.WaitGroup,
+	errch chan error,
+	ctx context.Context,
+) {
+	defer wg.Done()
 	b.logger.Debug().Msg("Setting up admin channel")
 	channelID, err := b.ensureAdminChannel(ctx)
 	if err != nil {
-		return err
+		errch <- errors.Wrap(err, "b.ensureAdminChannel")
+		return
 	}
 	b.logger.Info().Str("channel_id", channelID).Msg("Admin channel is ready")
 
 	err = b.updateAdminMessages(ctx, channelID)
 	if err != nil {
-		return errors.Wrap(err, "b.updateAdminMessages")
+		errch <- errors.Wrap(err, "b.updateAdminMessages")
+		return
 	}
-
 	b.session.AddHandler(b.handleAdminChannelInteractions(ctx))
-	return nil
 }
 
 func (b *Bot) ensureAdminChannel(
@@ -130,49 +136,40 @@ func (b *Bot) updateAdminMessages(
 	ctx context.Context,
 	channelID string,
 ) error {
-	// Update the messages concurrently to avoid delays from database queries
-	errch := make(chan (error))
-	defer close(errch)
 	// Select log channel
 	b.logger.Debug().Msg("Updating log channel select")
-	go b.updateChannelMessage(
-		errch,
+	err := b.updateChannelMessage(
 		ctx,
 		b.selectLogChannelContents,
 		messageAdminSelectLogChannel,
 		channelID,
 	)
+	if err != nil {
+		return errors.Wrap(err, "updateChannelMessage (selectLogChannel)")
+	}
 
 	// Select admin roles
 	b.logger.Debug().Msg("Updating admin roles select")
-	go b.updateChannelMessage(
-		errch,
+	err = b.updateChannelMessage(
 		ctx,
 		b.selectAdminRolesContents,
 		messageAdminSelectAdminRoles,
 		channelID,
 	)
+	if err != nil {
+		return errors.Wrap(err, "updateChannelMessage (selectAdminRoles)")
+	}
 
 	// Select manager roles
 	b.logger.Debug().Msg("Updating manager roles select")
-	go b.updateChannelMessage(
-		errch,
+	err = b.updateChannelMessage(
 		ctx,
 		b.selectManagerRolesContents,
 		messageAdminSelectManagerRoles,
 		channelID,
 	)
-
-	// Handle the errors
-	var errorSlice []error
-	for err := range errch {
-		if err != nil {
-			b.logger.Error().Err(err).Msg("Error updating admin channel message")
-			errorSlice = append(errorSlice, err)
-		}
-	}
-	if len(errorSlice) > 0 {
-		return errors.New("Multiple errors updating admin channel messages")
+	if err != nil {
+		return errors.Wrap(err, "updateChannelMessage (selectManagerRoles)")
 	}
 	return nil
 }

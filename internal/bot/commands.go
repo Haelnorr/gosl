@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"sync"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
@@ -14,7 +15,12 @@ func (b *Bot) setupCommands() {
 	}
 }
 
-func (b *Bot) registerCommands(ctx context.Context) error {
+func (b *Bot) registerCommands(
+	wg *sync.WaitGroup,
+	errch chan error,
+	ctx context.Context,
+) error {
+	defer wg.Done()
 	for _, cmd := range b.commands {
 		_, err := b.session.ApplicationCommandCreate(b.session.State.User.ID, "", &discordgo.ApplicationCommand{
 			Name:        cmd.Name,
@@ -23,7 +29,8 @@ func (b *Bot) registerCommands(ctx context.Context) error {
 		})
 		if err != nil {
 			b.logger.Error().Err(err).Str("command", cmd.Name).Msg("Failed to register command")
-			return errors.Wrapf(err, "b.session.ApplicationCommandCreate: %s", cmd.Name)
+			errch <- errors.Wrapf(err, "b.session.ApplicationCommandCreate: %s", cmd.Name)
+			continue
 		}
 		b.logger.Debug().Str("command", cmd.Name).Msg("Registering command")
 	}

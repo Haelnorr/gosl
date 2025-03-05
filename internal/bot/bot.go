@@ -4,6 +4,7 @@ import (
 	"context"
 	"gosl/pkg/db"
 	"io/fs"
+	"sync"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
@@ -41,13 +42,29 @@ func (b *Bot) Start(ctx context.Context) error {
 		return err
 	}
 
-	err = b.setupAdminChannel(ctx)
-	if err != nil {
-		return errors.Wrap(err, "b.setupAdminChannel")
+	var wg sync.WaitGroup
+	errch := make(chan error, 10)
+
+	wg.Add(1)
+	go b.setupAdminChannel(&wg, errch, ctx)
+	wg.Add(1)
+	go b.registerCommands(&wg, errch, ctx)
+
+	go func() {
+		wg.Wait()
+		close(errch)
+	}()
+
+	// Process errors
+	hadErrors := false
+	for err := range errch {
+		if err != nil {
+			b.logger.Error().Err(err).Msg("Error in bot startup")
+			hadErrors = true
+		}
 	}
-	err = b.registerCommands(ctx)
-	if err != nil {
-		return errors.Wrap(err, "b.registerCommands")
+	if hadErrors {
+		return errors.New("Error(s) during bot startup")
 	}
 	return nil
 }

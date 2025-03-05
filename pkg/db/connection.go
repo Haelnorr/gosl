@@ -23,7 +23,7 @@ func ConnectToDatabase(
 		return nil, errors.Wrap(err, "sql.Open (rw)")
 	}
 	wconn.SetMaxOpenConns(1)
-	opts = "_synchronous=NORMAL&_txlock=IMMEDIATE&mode=ro"
+	opts = "_synchronous=NORMAL&mode=ro"
 	file = fmt.Sprintf("file:%s.db?%s", dbName, opts)
 
 	rconn, err := sql.Open("sqlite3", file)

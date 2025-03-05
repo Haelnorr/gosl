@@ -2,7 +2,7 @@ package gamelogs
 
 type Gamelog struct {
 	Type            string `json:"type"`
-	MatchID         string `json:"match_id"` // TODO: change to UUID
+	MatchID         string `json:"match_id"`
 	Winner          string `json:"winner"`
 	Arena           string `json:"arena"`
 	PeriodsEnabled  string `json:"periods_enabled"`
@@ -45,8 +45,8 @@ type Gamelog struct {
 			OvertimeLosses    float32 `json:"overtime_losses"`
 		} `json:"stats"`
 	} `json:"players"`
-	// NOTE: these dont seem to be in the api, added by the log extractor
-	// ask gurgur what they're for
+	// precopy is time log was created, copy is time log was copied
+	// used to prevent cheating
 	PreCopy struct {
 		CR    float32 `json:"cr"`
 		Mod   float32 `json:"mod"`
