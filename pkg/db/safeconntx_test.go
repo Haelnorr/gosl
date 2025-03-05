@@ -20,7 +20,8 @@ func TestSafeConn(t *testing.T) {
 	require.NoError(t, err)
 	conn, err := tests.SetupTestDB(ver)
 	require.NoError(t, err)
-	sconn := MakeSafe(conn, logger)
+	// HACK: same conn used as wconn and rconn
+	sconn := MakeSafe(conn, conn, logger)
 	defer sconn.Close()
 
 	t.Run("Global lock waits for read locks to finish", func(t *testing.T) {
@@ -89,7 +90,8 @@ func TestSafeTX(t *testing.T) {
 	require.NoError(t, err)
 	conn, err := tests.SetupTestDB(ver)
 	require.NoError(t, err)
-	sconn := MakeSafe(conn, logger)
+	// HACK: same conn used as both wconn and rconn
+	sconn := MakeSafe(conn, conn, logger)
 	defer sconn.Close()
 
 	t.Run("Commit releases lock", func(t *testing.T) {

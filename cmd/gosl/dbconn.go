@@ -26,7 +26,8 @@ func setupDBConn(
 		if err != nil {
 			return nil, errors.Wrap(err, "tests.SetupTestDB")
 		}
-		conn := db.MakeSafe(testconn, logger)
+		// NOTE: testconn is setup as an in memory db, cant have 2 connections
+		conn := db.MakeSafe(testconn, testconn, logger)
 		return conn, nil
 	} else {
 		conn, err := db.ConnectToDatabase(config.DBName, logger)

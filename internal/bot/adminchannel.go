@@ -2,7 +2,6 @@ package bot
 
 import (
 	"context"
-	"gosl/pkg/db"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -13,118 +12,11 @@ const (
 	channelAdminName string = "gosl-bot-admin"
 )
 
-func selectLogChannelComponents(ctx context.Context, conn *db.SafeConn) (MessageContents, error) {
-	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	tx, err := conn.Begin(timeout)
-	if err != nil {
-		return nil, errors.Wrap(err, "b.conn.Begin")
-	}
-	defer tx.Rollback()
-	// TODO: get the values from the DB and set them in defaults
-	tx.Commit()
-
-	return func() (
-		string,
-		*discordgo.MessageEmbed,
-		[]discordgo.MessageComponent,
-	) {
-		return "",
-			&discordgo.MessageEmbed{
-				Title:       "Bot log output channel",
-				Description: `Select the channel to output bot logs to`,
-				Color:       0x00ff00, // Green color
-			},
-			[]discordgo.MessageComponent{
-				&discordgo.ActionsRow{
-					Components: []discordgo.MessageComponent{
-						&discordgo.SelectMenu{
-							MenuType:    discordgo.ChannelSelectMenu,
-							CustomID:    "log_channel_select",
-							Placeholder: "Select the channel for log output",
-						},
-					},
-				},
-			}
-	}, nil
-}
-func selectAdminRolesComponents(ctx context.Context, conn *db.SafeConn) (MessageContents, error) {
-	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	tx, err := conn.Begin(timeout)
-	if err != nil {
-		return nil, errors.Wrap(err, "b.conn.Begin")
-	}
-	defer tx.Rollback()
-	// TODO: get the values from the DB and set them in defaults
-	tx.Commit()
-
-	return func() (
-		string,
-		*discordgo.MessageEmbed,
-		[]discordgo.MessageComponent,
-	) {
-		return "",
-			&discordgo.MessageEmbed{
-				Title:       "Admin roles",
-				Description: `Select the roles that should have admin access`,
-				Color:       0x00ff00, // Green color
-			},
-			[]discordgo.MessageComponent{
-				&discordgo.ActionsRow{
-					Components: []discordgo.MessageComponent{
-						&discordgo.SelectMenu{
-							MenuType:    discordgo.RoleSelectMenu,
-							CustomID:    "admin_role_select",
-							Placeholder: "Select admin roles",
-							MaxValues:   10,
-						},
-					},
-				},
-			}
-	}, nil
-}
-func selectManagerRolesComponents(ctx context.Context, conn *db.SafeConn) (MessageContents, error) {
-	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	tx, err := conn.Begin(timeout)
-	if err != nil {
-		return nil, errors.Wrap(err, "b.conn.Begin")
-	}
-	defer tx.Rollback()
-	// TODO: get the values from the DB and set them in defaults
-	tx.Commit()
-
-	return func() (
-		string,
-		*discordgo.MessageEmbed,
-		[]discordgo.MessageComponent,
-	) {
-		return "",
-			&discordgo.MessageEmbed{
-				Title:       "Manager roles",
-				Description: `Select the roles that should have manager access`,
-				Color:       0x00ff00, // Green color
-			},
-			[]discordgo.MessageComponent{
-				&discordgo.ActionsRow{
-					Components: []discordgo.MessageComponent{
-						&discordgo.SelectMenu{
-							MenuType:    discordgo.RoleSelectMenu,
-							CustomID:    "manager_role_select",
-							Placeholder: "Select manager roles",
-							MaxValues:   10,
-						},
-					},
-				},
-			}
-	}, nil
-}
-
 func (b *Bot) handleAdminChannelInteractions(ctx context.Context) handler {
+	b.logger.Debug().Msg("Adding handler for admin channel interactions")
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if i.Type == discordgo.InteractionMessageComponent {
-			channelID, err := getAdminChannel(ctx, b.conn)
+			channelID, err := b.getChannel(ctx, channelAdmin)
 			if err != nil {
 				b.logger.Error().Err(err).Msg("failed to get a channel id for the admin channel")
 				panic("unable to get admin channel ID")
@@ -132,20 +24,40 @@ func (b *Bot) handleAdminChannelInteractions(ctx context.Context) handler {
 			if i.Message.ChannelID != channelID {
 				return
 			}
+			b.logger.Debug().Msg("Handling admin channel interaction")
+			timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+			defer cancel()
+			tx, err := b.conn.Begin(timeout)
+			if err != nil {
+				msg := "Failed to start database transaction"
+				b.logger.Error().Err(err).Msg(msg)
+				errorResponse("Database error occured", &msg, b.files, s, i)
+				return
+			}
+			defer tx.Rollback()
 			// TODO: allow only if user is admin (discord override) or has one
 			// of the set admin roles
 
 			// Handle select menu interactions
 			switch i.MessageComponentData().CustomID {
 			case "log_channel_select":
-				selectedChannel := i.MessageComponentData().Values[0]
-				emphemeralMessage("updated log channel to"+selectedChannel, b.logger, s, i)
+				b.logger.Debug().Msg("Handling log channel select interaction")
+				err = handleSelectLogChannelInteraction(ctx, tx, b.logger, s, i)
+				if err != nil {
+					msg := "Failed to update log channel"
+					smsg := err.Error()
+					b.logger.Error().Err(err).Msg(msg)
+					errorResponse(msg, &smsg, b.files, s, i)
+				}
+				tx.Commit()
 			case "admin_role_select":
 				// TODO: update the roles in the db
+				b.logger.Debug().Msg("Handling admin roles select interaction")
 				_ = i.MessageComponentData().Values
 				emphemeralMessage("updated admin roles", b.logger, s, i)
 			case "manager_role_select":
 				// TODO: update the roles in the db
+				b.logger.Debug().Msg("Handling manager roles select interaction")
 				_ = i.MessageComponentData().Values
 				emphemeralMessage("updated admin roles", b.logger, s, i)
 			}
@@ -154,6 +66,7 @@ func (b *Bot) handleAdminChannelInteractions(ctx context.Context) handler {
 }
 
 func (b *Bot) setupAdminChannel(ctx context.Context) error {
+	b.logger.Debug().Msg("Setting up admin channel")
 	channelID, err := b.ensureAdminChannel(ctx)
 	if err != nil {
 		return err
@@ -172,6 +85,7 @@ func (b *Bot) setupAdminChannel(ctx context.Context) error {
 func (b *Bot) ensureAdminChannel(
 	ctx context.Context,
 ) (string, error) {
+	b.logger.Debug().Msg("Ensuring admin channel exists")
 	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	tx, err := b.conn.Begin(timeout)
@@ -179,19 +93,23 @@ func (b *Bot) ensureAdminChannel(
 		return "", errors.Wrap(err, "conn.Begin")
 	}
 	defer tx.Commit()
-	channelIDs, err := getChannelsForPurpose(ctx, tx, channelAdmin)
+	b.logger.Debug().Msg("Getting admin channel ids")
+	channelIDs, err := queryChannelsForPurpose(ctx, tx, channelAdmin)
 	if err != nil {
 		tx.Rollback()
 		return "", errors.Wrap(err, "getChannelsForPurpose")
 	}
 	for _, channelID := range channelIDs {
 		if exists := b.checkChannelExists(channelID); exists {
+			b.logger.Debug().Msg("Admin channel found")
 			return channelIDs[0], nil
 		} else {
+			b.logger.Debug().Msg("Removing dead channel ID from database")
 			removeChannelPurpose(ctx, tx, channelID, channelAdmin)
 		}
 	}
 
+	b.logger.Debug().Msg("Creating new admin channel")
 	channel, err := b.session.GuildChannelCreate(
 		b.guildID, channelAdminName, discordgo.ChannelTypeGuildText)
 	if err != nil {
@@ -199,6 +117,7 @@ func (b *Bot) ensureAdminChannel(
 		return "", errors.Wrap(err, "s.GuildChannelCreate")
 	}
 
+	b.logger.Debug().Msg("Adding new channel to database")
 	err = addChannelPurpose(ctx, tx, channel.ID, channelAdmin)
 	if err != nil {
 		tx.Rollback()
@@ -211,96 +130,49 @@ func (b *Bot) updateAdminMessages(
 	ctx context.Context,
 	channelID string,
 ) error {
+	// Update the messages concurrently to avoid delays from database queries
+	errch := make(chan (error))
+	defer close(errch)
 	// Select log channel
-	components, err := selectLogChannelComponents(ctx, b.conn)
-	if err != nil {
-		return errors.Wrap(err, "selectLogChannelComponents")
-	}
-	err = b.updateAdminChannelMessage(
-		ctx, channelID, messageAdminSelectLogChannel, components)
-	if err != nil {
-		return errors.Wrap(err, "updateAdminChannelMessage: SelectLogChannel")
-	}
+	b.logger.Debug().Msg("Updating log channel select")
+	go b.updateChannelMessage(
+		errch,
+		ctx,
+		b.selectLogChannelContents,
+		messageAdminSelectLogChannel,
+		channelID,
+	)
 
 	// Select admin roles
-	components, err = selectAdminRolesComponents(ctx, b.conn)
-	if err != nil {
-		return errors.Wrap(err, "selectLogChannelComponents")
-	}
-	err = b.updateAdminChannelMessage(
-		ctx, channelID, messageAdminSelectAdminRoles, components)
-	if err != nil {
-		return errors.Wrap(err, "updateAdminChannelMessage: SelectAdminRoles")
-	}
+	b.logger.Debug().Msg("Updating admin roles select")
+	go b.updateChannelMessage(
+		errch,
+		ctx,
+		b.selectAdminRolesContents,
+		messageAdminSelectAdminRoles,
+		channelID,
+	)
 
 	// Select manager roles
-	components, err = selectManagerRolesComponents(ctx, b.conn)
-	if err != nil {
-		return errors.Wrap(err, "selectLogChannelComponents")
-	}
-	err = b.updateAdminChannelMessage(
-		ctx, channelID, messageAdminSelectManagerRoles, components)
-	if err != nil {
-		return errors.Wrap(err, "updateAdminChannelMessage: SelectManagerRoles")
-	}
-	return nil
-}
+	b.logger.Debug().Msg("Updating manager roles select")
+	go b.updateChannelMessage(
+		errch,
+		ctx,
+		b.selectManagerRolesContents,
+		messageAdminSelectManagerRoles,
+		channelID,
+	)
 
-func (b *Bot) updateAdminChannelMessage(
-	ctx context.Context,
-	adminChannelID string,
-	purpose uint16,
-	contents MessageContents,
-) error {
-	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	tx, err := b.conn.Begin(timeout)
-	defer tx.Commit()
-	messageID, channelID, err := getMessageForPurpose(
-		ctx, tx, purpose)
-	if err != nil {
-		tx.Rollback()
-		return errors.Wrap(err, "getMessageForPurpose")
-	}
-	if messageID != "" && channelID != "" {
-		if exists := b.checkMessageExists(messageID, channelID); exists {
-			err = b.editStaticMessage(contents, messageID, channelID)
-			if err != nil {
-				tx.Rollback()
-				return errors.Wrap(err, "b.editStaticMessage")
-			}
-			return nil
+	// Handle the errors
+	var errorSlice []error
+	for err := range errch {
+		if err != nil {
+			b.logger.Error().Err(err).Msg("Error updating admin channel message")
+			errorSlice = append(errorSlice, err)
 		}
 	}
-	messageID, err = b.createStaticMessage(contents, adminChannelID)
-	if err != nil {
-		tx.Rollback()
-		return errors.Wrap(err, "b.createStaticMessage")
-	}
-	err = addMessagePurpose(ctx, tx, messageID, adminChannelID, purpose)
-	if err != nil {
-		tx.Rollback()
-		return errors.Wrap(err, "addMessagePurpose")
+	if len(errorSlice) > 0 {
+		return errors.New("Multiple errors updating admin channel messages")
 	}
 	return nil
-}
-
-func getAdminChannel(ctx context.Context, conn *db.SafeConn) (string, error) {
-	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	tx, err := conn.Begin(timeout)
-	if err != nil {
-		return "", errors.Wrap(err, "conn.Begin")
-	}
-	channelIDs, err := getChannelsForPurpose(ctx, tx, channelAdmin)
-	if err != nil {
-		tx.Rollback()
-		return "", errors.Wrap(err, "getChannelsForPurpose")
-	}
-	if len(channelIDs) == 0 {
-		tx.Rollback()
-		return "", errors.New("No admin channels found")
-	}
-	tx.Commit()
-	return channelIDs[0], nil
 }

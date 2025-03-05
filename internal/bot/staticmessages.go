@@ -3,7 +3,9 @@ package bot
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"gosl/pkg/db"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
@@ -16,6 +18,7 @@ const (
 )
 
 type MessageContents func() (string, *discordgo.MessageEmbed, []discordgo.MessageComponent)
+type MessageContentsFunc func(ctx context.Context) (MessageContents, error)
 
 func addMessagePurpose(
 	ctx context.Context,
@@ -111,6 +114,74 @@ func (b *Bot) editStaticMessage(
 	})
 	if err != nil {
 		return errors.Wrap(err, "session.ChannelMessageEditComplex")
+	}
+	return nil
+}
+
+func (b *Bot) updateChannelMessage(
+	ch chan (error),
+	ctx context.Context,
+	contentsFunc MessageContentsFunc,
+	purpose uint16,
+	channelID string,
+) {
+	components, err := contentsFunc(ctx)
+	if err != nil {
+		ch <- errors.Wrap(err, fmt.Sprintf("contentsFunc (purpose %v)", purpose))
+		return
+	}
+	err = b.addOrEditChannelMessage(
+		ctx, channelID, purpose, components)
+	if err != nil {
+		ch <- errors.Wrap(err, fmt.Sprintf("updateChannelMessage (purpose %v)", purpose))
+		return
+	}
+	ch <- nil
+}
+
+func (b *Bot) addOrEditChannelMessage(
+	ctx context.Context,
+	defChannelID string,
+	purpose uint16,
+	contents MessageContents,
+) error {
+	b.logger.Debug().
+		Uint16("purpose", purpose).
+		Str("channel", defChannelID).
+		Msg("Updating message")
+	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	tx, err := b.conn.Begin(timeout)
+	defer tx.Commit()
+	b.logger.Debug().Uint16("purpose", purpose).Msg("Finding existing message")
+	messageID, channelID, err := getMessageForPurpose(
+		ctx, tx, purpose)
+	if err != nil {
+		tx.Rollback()
+		return errors.Wrap(err, "getMessageForPurpose")
+	}
+	if messageID != "" && channelID != "" {
+		if exists := b.checkMessageExists(messageID, channelID); exists {
+			b.logger.Debug().Uint16("purpose", purpose).Msg("Message found, editing")
+			err = b.editStaticMessage(contents, messageID, channelID)
+			if err != nil {
+				tx.Rollback()
+				return errors.Wrap(err, "b.editStaticMessage")
+			}
+			return nil
+		}
+	}
+	b.logger.Debug().Uint16("purpose", purpose).Msg("No message found, creating new message")
+	messageID, err = b.createStaticMessage(contents, defChannelID)
+	if err != nil {
+		tx.Rollback()
+		return errors.Wrap(err, "b.createStaticMessage")
+	}
+	b.logger.Debug().Uint16("purpose", purpose).Msg("Adding message to database")
+	err = addMessagePurpose(ctx, tx, messageID, defChannelID, purpose)
+	if err != nil {
+		tx.Rollback()
+		return errors.Wrap(err, "addMessagePurpose")
 	}
 	return nil
 }

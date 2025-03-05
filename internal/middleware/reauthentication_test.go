@@ -22,7 +22,7 @@ func TestReauthRequired(t *testing.T) {
 	require.NoError(t, err)
 	conn, err := tests.SetupTestDB(ver)
 	require.NoError(t, err)
-	sconn := db.MakeSafe(conn, logger)
+	sconn := db.MakeSafe(conn, conn, logger)
 	defer sconn.Close()
 
 	// Handler to check outcome of Authentication middleware

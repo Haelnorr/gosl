@@ -3,6 +3,8 @@ package db
 import (
 	"context"
 	"database/sql"
+	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -11,6 +13,52 @@ import (
 type SafeTX struct {
 	tx *sql.Tx
 	sc *SafeConn
+}
+type SafeRTX struct {
+	tx *sql.Tx
+	sc *SafeConn
+}
+
+func isWriteOperation(query string) bool {
+	query = strings.TrimSpace(query)
+	query = strings.ToUpper(query)
+	writeOpsRegex := `^(INSERT|UPDATE|DELETE|REPLACE|MERGE|CREATE|DROP|ALTER|TRUNCATE)\s+`
+	re := regexp.MustCompile(writeOpsRegex)
+	return re.MatchString(query)
+}
+
+// Query the database inside the transaction
+func (stx *SafeRTX) Query(
+	ctx context.Context,
+	query string,
+	args ...interface{},
+) (*sql.Rows, error) {
+	if stx.tx == nil {
+		return nil, errors.New("Cannot query without a transaction")
+	}
+	if isWriteOperation(query) {
+		return nil, errors.New("Cannot query with a write operation")
+	}
+	rows, err := stx.tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrap(err, "tx.QueryContext")
+	}
+	return rows, nil
+}
+
+// Query a row from the database inside the transaction
+func (stx *SafeRTX) QueryRow(
+	ctx context.Context,
+	query string,
+	args ...interface{},
+) (*sql.Row, error) {
+	if stx.tx == nil {
+		return nil, errors.New("Cannot query without a transaction")
+	}
+	if isWriteOperation(query) {
+		return nil, errors.New("Cannot query with a write operation")
+	}
+	return stx.tx.QueryRowContext(ctx, query, args...), nil
 }
 
 // Query the database inside the transaction
@@ -22,7 +70,14 @@ func (stx *SafeTX) Query(
 	if stx.tx == nil {
 		return nil, errors.New("Cannot query without a transaction")
 	}
-	return stx.tx.QueryContext(ctx, query, args...)
+	if isWriteOperation(query) {
+		return nil, errors.New("Cannot query with a write operation")
+	}
+	rows, err := stx.tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrap(err, "tx.QueryContext")
+	}
+	return rows, nil
 }
 
 // Query a row from the database inside the transaction
@@ -33,6 +88,9 @@ func (stx *SafeTX) QueryRow(
 ) (*sql.Row, error) {
 	if stx.tx == nil {
 		return nil, errors.New("Cannot query without a transaction")
+	}
+	if isWriteOperation(query) {
+		return nil, errors.New("Cannot query with a write operation")
 	}
 	return stx.tx.QueryRowContext(ctx, query, args...), nil
 }
@@ -46,7 +104,11 @@ func (stx *SafeTX) Exec(
 	if stx.tx == nil {
 		return nil, errors.New("Cannot exec without a transaction")
 	}
-	return stx.tx.ExecContext(ctx, query, args...)
+	res, err := stx.tx.ExecContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrap(err, "tx.ExecContext")
+	}
+	return res, nil
 }
 
 // Commit the current transaction and release the read lock
@@ -56,7 +118,6 @@ func (stx *SafeTX) Commit() error {
 	}
 	err := stx.tx.Commit()
 	stx.tx = nil
-
 	stx.sc.releaseReadLock()
 	return err
 }
