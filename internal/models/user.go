@@ -17,7 +17,7 @@ type User struct {
 }
 
 // Uses bcrypt to set the users Password_hash from the given password
-func (user *User) SetPassword(ctx context.Context, tx *db.SafeTX, password string) error {
+func (user *User) SetPassword(ctx context.Context, tx *db.SafeWTX, password string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return errors.Wrap(err, "bcrypt.GenerateFromPassword")
@@ -41,7 +41,7 @@ func (user *User) CheckPassword(password string) error {
 }
 
 // Change the user's username
-func (user *User) ChangeUsername(ctx context.Context, tx *db.SafeTX, newUsername string) error {
+func (user *User) ChangeUsername(ctx context.Context, tx *db.SafeWTX, newUsername string) error {
 	query := `UPDATE users SET username = ? WHERE id = ?`
 	_, err := tx.Exec(ctx, query, newUsername, user.ID)
 	if err != nil {
@@ -51,7 +51,7 @@ func (user *User) ChangeUsername(ctx context.Context, tx *db.SafeTX, newUsername
 }
 
 // Change the user's bio
-func (user *User) ChangeBio(ctx context.Context, tx *db.SafeTX, newBio string) error {
+func (user *User) ChangeBio(ctx context.Context, tx *db.SafeWTX, newBio string) error {
 	query := `UPDATE users SET bio = ? WHERE id = ?`
 	_, err := tx.Exec(ctx, query, newBio, user.ID)
 	if err != nil {

@@ -14,7 +14,7 @@ const (
 	permissionLeagueManager uint16 = 2
 )
 
-func addPermission(ctx context.Context, tx *db.SafeTX, roleid string, perm uint16) error {
+func addPermission(ctx context.Context, tx *db.SafeWTX, roleid string, perm uint16) error {
 	query := `
 INSERT INTO config_roles (role_id, permission) 
 VALUES (?, ?) ON CONFLICT DO NOTHING;
@@ -22,7 +22,7 @@ VALUES (?, ?) ON CONFLICT DO NOTHING;
 	_, err := tx.Exec(ctx, query, roleid, perm)
 	return err
 }
-func removePermission(ctx context.Context, tx *db.SafeTX, roleid string, perm uint16) error {
+func removePermission(ctx context.Context, tx *db.SafeWTX, roleid string, perm uint16) error {
 	query := `
 DELETE FROM config_roles WHERE role_id = ? AND permission = ?;
 `
@@ -32,7 +32,7 @@ DELETE FROM config_roles WHERE role_id = ? AND permission = ?;
 
 func hasPermission(
 	ctx context.Context,
-	tx *db.SafeTX,
+	tx db.SafeTX,
 	s *discordgo.Session,
 	guildID string,
 	user *discordgo.User,

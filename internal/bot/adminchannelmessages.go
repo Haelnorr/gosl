@@ -12,7 +12,7 @@ func (b *Bot) selectLogChannelContents(ctx context.Context) (MessageContents, er
 	b.logger.Debug().Msg("Setting up select log channel components")
 	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	tx, err := b.conn.Begin(timeout)
+	tx, err := b.conn.RBegin(timeout)
 	if err != nil {
 		return nil, errors.Wrap(err, "b.conn.Begin")
 	}

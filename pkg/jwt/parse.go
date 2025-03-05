@@ -19,7 +19,7 @@ import (
 func ParseAccessToken(
 	config *config.Config,
 	ctx context.Context,
-	tx *db.SafeTX,
+	tx db.SafeTX,
 	tokenString string,
 ) (*AccessToken, error) {
 	if tokenString == "" {
@@ -92,7 +92,7 @@ func ParseAccessToken(
 func ParseRefreshToken(
 	config *config.Config,
 	ctx context.Context,
-	tx *db.SafeTX,
+	tx db.SafeTX,
 	tokenString string,
 ) (*RefreshToken, error) {
 	if tokenString == "" {

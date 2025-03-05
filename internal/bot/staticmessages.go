@@ -22,7 +22,7 @@ type MessageContentsFunc func(ctx context.Context) (MessageContents, error)
 
 func addMessagePurpose(
 	ctx context.Context,
-	tx *db.SafeTX,
+	tx *db.SafeWTX,
 	messageID string,
 	channelID string,
 	purpose uint16,
@@ -40,7 +40,7 @@ SET message_id = excluded.message_id,
 
 func removeMessagePurpose(
 	ctx context.Context,
-	tx *db.SafeTX,
+	tx *db.SafeWTX,
 	messageID string,
 	channelID string,
 	purpose uint16,
@@ -55,7 +55,7 @@ DELETE FROM config_messages WHERE message_id = ? AND channel_id = ? AND purpose 
 // Returns messageID, channelID, err
 func getMessageForPurpose(
 	ctx context.Context,
-	tx *db.SafeTX,
+	tx db.SafeTX,
 	purpose uint16,
 ) (string, string, error) {
 	query := `

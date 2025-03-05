@@ -9,8 +9,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+type SafeTX interface {
+	Query(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
+	QueryRow(ctx context.Context, query string, args ...interface{}) (*sql.Row, error)
+	Commit() error
+	Rollback() error
+}
+
 // Extends sql.Tx for use with SafeConn
-type SafeTX struct {
+type SafeWTX struct {
 	tx *sql.Tx
 	sc *SafeConn
 }
@@ -46,23 +53,8 @@ func (stx *SafeRTX) Query(
 	return rows, nil
 }
 
-// Query a row from the database inside the transaction
-func (stx *SafeRTX) QueryRow(
-	ctx context.Context,
-	query string,
-	args ...interface{},
-) (*sql.Row, error) {
-	if stx.tx == nil {
-		return nil, errors.New("Cannot query without a transaction")
-	}
-	if isWriteOperation(query) {
-		return nil, errors.New("Cannot query with a write operation")
-	}
-	return stx.tx.QueryRowContext(ctx, query, args...), nil
-}
-
 // Query the database inside the transaction
-func (stx *SafeTX) Query(
+func (stx *SafeWTX) Query(
 	ctx context.Context,
 	query string,
 	args ...interface{},
@@ -81,7 +73,22 @@ func (stx *SafeTX) Query(
 }
 
 // Query a row from the database inside the transaction
-func (stx *SafeTX) QueryRow(
+func (stx *SafeRTX) QueryRow(
+	ctx context.Context,
+	query string,
+	args ...interface{},
+) (*sql.Row, error) {
+	if stx.tx == nil {
+		return nil, errors.New("Cannot query without a transaction")
+	}
+	if isWriteOperation(query) {
+		return nil, errors.New("Cannot query with a write operation")
+	}
+	return stx.tx.QueryRowContext(ctx, query, args...), nil
+}
+
+// Query a row from the database inside the transaction
+func (stx *SafeWTX) QueryRow(
 	ctx context.Context,
 	query string,
 	args ...interface{},
@@ -96,7 +103,7 @@ func (stx *SafeTX) QueryRow(
 }
 
 // Exec a statement on the database inside the transaction
-func (stx *SafeTX) Exec(
+func (stx *SafeWTX) Exec(
 	ctx context.Context,
 	query string,
 	args ...interface{},
@@ -122,6 +129,17 @@ func (stx *SafeRTX) Commit() error {
 	return err
 }
 
+// Commit the current transaction and release the read lock
+func (stx *SafeWTX) Commit() error {
+	if stx.tx == nil {
+		return errors.New("Cannot commit without a transaction")
+	}
+	err := stx.tx.Commit()
+	stx.tx = nil
+	stx.sc.releaseReadLock()
+	return err
+}
+
 // Abort the current transaction, releasing the read lock
 func (stx *SafeRTX) Rollback() error {
 	if stx.tx == nil {
@@ -133,19 +151,8 @@ func (stx *SafeRTX) Rollback() error {
 	return err
 }
 
-// Commit the current transaction and release the read lock
-func (stx *SafeTX) Commit() error {
-	if stx.tx == nil {
-		return errors.New("Cannot commit without a transaction")
-	}
-	err := stx.tx.Commit()
-	stx.tx = nil
-	stx.sc.releaseReadLock()
-	return err
-}
-
 // Abort the current transaction, releasing the read lock
-func (stx *SafeTX) Rollback() error {
+func (stx *SafeWTX) Rollback() error {
 	if stx.tx == nil {
 		return errors.New("Cannot rollback without a transaction")
 	}

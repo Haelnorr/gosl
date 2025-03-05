@@ -35,7 +35,6 @@ func cmdUploadLogs(b *Bot) *command {
 	)
 }
 
-// TODO: rewrite responses, this shit broke
 func handleUploadLogs(b *Bot) handler {
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// TODO: check user has permission to upload logs

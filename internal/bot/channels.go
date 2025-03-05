@@ -15,13 +15,13 @@ const (
 	channelLeagueManager uint16 = 3
 )
 
-func addChannelPurpose(ctx context.Context, tx *db.SafeTX, channelID string, purpose uint16) error {
+func addChannelPurpose(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
 	query := `INSERT INTO config_channels (channel_id, purpose) VALUES (?, ?) ON CONFLICT DO NOTHING;`
 	_, err := tx.Exec(ctx, query, channelID, purpose)
 	return err
 }
 
-func setChannelPurpose(ctx context.Context, tx *db.SafeTX, channelID string, purpose uint16) error {
+func setChannelPurpose(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
 	var count int
 	query := `SELECT COUNT(*) FROM config_channels WHERE purpose = ?;`
 	row, err := tx.QueryRow(ctx, query, purpose)
@@ -48,7 +48,7 @@ func setChannelPurpose(ctx context.Context, tx *db.SafeTX, channelID string, pur
 	return nil
 }
 
-func removeChannelPurpose(ctx context.Context, tx *db.SafeTX, channelID string, purpose uint16) error {
+func removeChannelPurpose(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
 	query := `DELETE FROM config_channels WHERE channel_id = ? AND purpose = ?;`
 	_, err := tx.Exec(ctx, query, channelID, purpose)
 	return err
@@ -56,7 +56,7 @@ func removeChannelPurpose(ctx context.Context, tx *db.SafeTX, channelID string, 
 
 func queryChannelForPurpose(
 	ctx context.Context,
-	tx *db.SafeTX,
+	tx db.SafeTX,
 	purpose uint16,
 ) (string, error) {
 	query := `SELECT channel_id FROM config_channels WHERE purpose = ? LIMIT 1;`
@@ -76,7 +76,7 @@ func queryChannelForPurpose(
 }
 func queryChannelsForPurpose(
 	ctx context.Context,
-	tx *db.SafeTX,
+	tx db.SafeTX,
 	purpose uint16,
 ) ([]string, error) {
 	query := `SELECT channel_id FROM config_channels WHERE purpose = ?;`

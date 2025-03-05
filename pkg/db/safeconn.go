@@ -62,7 +62,7 @@ func (conn *SafeConn) releaseReadLock() {
 
 // Starts a new transaction based on the current context. Will cancel if
 // the context is closed/cancelled/done
-func (conn *SafeConn) Begin(ctx context.Context) (*SafeTX, error) {
+func (conn *SafeConn) Begin(ctx context.Context) (*SafeWTX, error) {
 	lockAcquired := make(chan struct{})
 	lockCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -85,7 +85,7 @@ func (conn *SafeConn) Begin(ctx context.Context) (*SafeTX, error) {
 			conn.releaseReadLock()
 			return nil, err
 		}
-		return &SafeTX{tx: tx, sc: conn}, nil
+		return &SafeWTX{tx: tx, sc: conn}, nil
 	case <-ctx.Done():
 		cancel()
 		return nil, errors.New("Transaction time out due to database lock")

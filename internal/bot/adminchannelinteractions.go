@@ -10,7 +10,7 @@ import (
 
 func handleSelectLogChannelInteraction(
 	ctx context.Context,
-	tx *db.SafeTX,
+	tx *db.SafeWTX,
 	logger *zerolog.Logger,
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
