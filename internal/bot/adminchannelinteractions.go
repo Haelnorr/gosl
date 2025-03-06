@@ -32,7 +32,7 @@ func (b *Bot) handleAdminChannelInteractions(ctx context.Context) handler {
 				return
 			}
 			defer tx.Rollback()
-			isAdmin, err := hasPermission(ctx, tx, s, b.guildID, i.Member.User, permissionAdmin)
+			isAdmin, err := hasPermission(ctx, tx, s, b.guildID, i.Member, permissionAdmin)
 			if !isAdmin {
 				msg := "You do not have permission for this action"
 				errorResponse("Forbidden", &msg, b.files, s, i)
@@ -77,7 +77,11 @@ func (b *Bot) handleSelectLogChannelInteraction(
 	if err != nil {
 		return errors.Wrap(err, "setChannelPurpose (log channel)")
 	}
-	b.ephemeralReply("Updated log channel to "+selectedChannel, s, i)
+	b.setLogChannel(selectedChannel)
+	channel := i.MessageComponentData().Resolved.Channels[selectedChannel]
+	msg := "Log channel updated to: " + channel.Name
+	b.Log().UserEvent(i.Member, msg)
+	b.replyEphemeral("Updated log channel to "+channel.Name, s, i)
 	// Spin off updating the message so it doesnt block/get blocked by the transaction
 	// and runs as soon as the interaction is completed
 	go func() {
@@ -108,7 +112,13 @@ func (b *Bot) handleSelectAdminRolesInteraction(
 	if err != nil {
 		return errors.Wrap(err, "setRolesForPermission (admin)")
 	}
-	b.ephemeralReply("updated admin roles", s, i)
+	droles := i.MessageComponentData().Resolved.Roles
+	msg := "Admin roles updated to:\n"
+	for _, role := range roles {
+		msg = msg + " - " + droles[role].Name + "\n"
+	}
+	b.Log().UserEvent(i.Member, msg)
+	b.replyEphemeral(msg, s, i)
 	// Spin off updating the message so it doesnt block/get blocked by the transaction
 	// and runs as soon as the interaction is completed
 	go func() {
@@ -139,7 +149,13 @@ func (b *Bot) handleSelectManagerRolesInteraction(
 	if err != nil {
 		return errors.Wrap(err, "setRolesForPermission (manager)")
 	}
-	b.ephemeralReply("updated league manager roles", s, i)
+	droles := i.MessageComponentData().Resolved.Roles
+	msg := "League Manager roles updated to:\n"
+	for _, role := range roles {
+		msg = msg + " - " + droles[role].Name + "\n"
+	}
+	b.Log().UserEvent(i.Member, msg)
+	b.replyEphemeral(msg, s, i)
 	// Spin off updating the message so it doesnt block/get blocked by the transaction
 	// and runs as soon as the interaction is completed
 	go func() {

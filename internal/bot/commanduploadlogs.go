@@ -72,6 +72,6 @@ func handleUploadLogs(b *Bot) handler {
 
 		// TODO: actually do something with the log data
 
-		b.staticReply("Log files uploaded", s, i)
+		b.replyStatic("Log files uploaded", s, i)
 	}
 }

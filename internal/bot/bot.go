@@ -12,12 +12,13 @@ import (
 )
 
 type Bot struct {
-	session  *discordgo.Session
-	logger   *zerolog.Logger
-	commands []*command
-	files    *fs.FS
-	conn     *db.SafeConn
-	guildID  string
+	session    *discordgo.Session
+	logchannel string
+	logger     *zerolog.Logger
+	commands   []*command
+	files      *fs.FS
+	conn       *db.SafeConn
+	guildID    string
 }
 
 func NewBot(
@@ -39,16 +40,23 @@ func NewBot(
 func (b *Bot) Start(ctx context.Context) error {
 	err := b.session.Open()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "b.session.Open")
 	}
 
+	// Setup log channel first so startup issues can be reported in discord
+	err = b.setupLogChannel(ctx)
+	if err != nil {
+		return errors.Wrap(err, "b.setupLogChannel")
+	}
+
+	// Do other setup concurrently to reduce startup time
 	var wg sync.WaitGroup
 	errch := make(chan error, 10)
 
 	wg.Add(1)
-	go b.setupAdminChannel(&wg, errch, ctx)
-	wg.Add(1)
 	go b.registerCommands(&wg, errch, ctx)
+	wg.Add(1)
+	go b.setupAdminChannel(&wg, errch, ctx)
 
 	go func() {
 		wg.Wait()
@@ -66,6 +74,7 @@ func (b *Bot) Start(ctx context.Context) error {
 		return errors.New("Error(s) during bot startup")
 	}
 	b.logger.Info().Msg("Bot startup complete!")
+	b.Log().Info("Bot startup complete")
 	return nil
 }
 

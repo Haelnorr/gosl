@@ -36,13 +36,9 @@ func hasPermission(
 	tx db.SafeTX,
 	s *discordgo.Session,
 	guildID string,
-	user *discordgo.User,
+	member *discordgo.Member,
 	permid uint16,
 ) (bool, error) {
-	member, err := s.GuildMember(guildID, user.ID)
-	if err != nil {
-		return false, errors.Wrap(err, "s.GuildMember")
-	}
 	admin := member.Permissions&discordgo.PermissionAdministrator != 0
 	if admin {
 		return true, nil
@@ -111,7 +107,6 @@ func setRolesForPermission(
         DELETE FROM config_roles WHERE permission = ?
         AND role_id NOT IN (` + strings.Repeat("?,", len(roles)-1) + `?);
         `
-		args = append(args, permid)
 		for _, role := range roles {
 			args = append(args, role)
 			err := addPermission(ctx, tx, role, permid)
