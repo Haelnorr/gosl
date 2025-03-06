@@ -6,12 +6,10 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/rs/zerolog"
 )
 
-func replyMessage(
+func (b *Bot) staticReply(
 	msg string,
-	logger *zerolog.Logger,
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
@@ -22,7 +20,7 @@ func replyMessage(
 		},
 	})
 	if err != nil {
-		logger.Error().Err(err).Str("msg", msg).Msg("Failed to respond")
+		b.logger.Error().Err(err).Str("msg", msg).Msg("Failed to respond")
 		return err
 	}
 	return nil
@@ -30,9 +28,8 @@ func replyMessage(
 
 // Responds to the interaction with an ephemeral message that deletes after
 // 10 seconds
-func emphemeralMessage(
+func (b *Bot) ephemeralReply(
 	msg string,
-	logger *zerolog.Logger,
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
@@ -44,7 +41,7 @@ func emphemeralMessage(
 		},
 	})
 	if err != nil {
-		logger.Error().Err(err).Str("msg", msg).Msg("Failed to respond")
+		b.logger.Error().Err(err).Str("msg", msg).Msg("Failed to respond")
 		return err
 	}
 	// Wait for 10 seconds before deleting
@@ -52,7 +49,7 @@ func emphemeralMessage(
 		time.Sleep(10 * time.Second) // Adjust timeout as needed
 		err := s.InteractionResponseDelete(i.Interaction)
 		if err != nil {
-			logger.Warn().Err(err).Str("msg", msg).
+			b.logger.Warn().Err(err).Str("msg", msg).
 				Msg("Failed to delete emphemeral message")
 		}
 	}()

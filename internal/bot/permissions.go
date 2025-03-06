@@ -41,7 +41,11 @@ func hasPermission(
 ) (bool, error) {
 	member, err := s.GuildMember(guildID, user.ID)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "s.GuildMember")
+	}
+	admin := member.Permissions&discordgo.PermissionAdministrator != 0
+	if admin {
+		return true, nil
 	}
 	if len(member.Roles) == 0 {
 		return false, nil
@@ -68,6 +72,29 @@ SELECT 1 FROM config_roles WHERE
 	return err == nil, err
 }
 
+func getRolesWithPermission(
+	ctx context.Context,
+	tx db.SafeTX,
+	permid uint16,
+) ([]string, error) {
+	query := `SELECT role_id FROM config_roles WHERE permission = ?;`
+	rows, err := tx.Query(ctx, query, permid)
+	if err != nil {
+		return nil, errors.Wrap(err, "tx.Query")
+	}
+	defer rows.Close()
+	var roles []string
+	for rows.Next() {
+		var role string
+		err := rows.Scan(&role)
+		if err != nil {
+			return nil, errors.Wrap(err, "rows.Scan")
+		}
+		roles = append(roles, role)
+	}
+	return roles, nil
+}
+
 // Grants the permission to the provided roles and removes it from any roles
 // not provided
 func setRolesForPermission(
@@ -77,21 +104,21 @@ func setRolesForPermission(
 	permid uint16,
 ) error {
 	args := make([]interface{}, 0, len(roles)+1)
-	args = append(args, permid)
-	for _, role := range roles {
-		args = append(args, role)
-		err := addPermission(ctx, tx, role, permid)
-		if err != nil {
-			return errors.Wrap(err, "addPermission")
+	query := `DELETE FROM config_roles WHERE permission = ?`
+	args = []interface{}{permid}
+	if len(roles) != 0 {
+		query = `
+        DELETE FROM config_roles WHERE permission = ?
+        AND role_id NOT IN (` + strings.Repeat("?,", len(roles)-1) + `?);
+        `
+		args = append(args, permid)
+		for _, role := range roles {
+			args = append(args, role)
+			err := addPermission(ctx, tx, role, permid)
+			if err != nil {
+				return errors.Wrap(err, "addPermission")
+			}
 		}
-	}
-	query := `
-    DELETE FROM config_roles WHERE permission = ?
-    AND role_id NOT IN (` + strings.Repeat("?,", len(roles)-1) + `?);
-    `
-	if len(roles) == 0 {
-		query = `DELETE FROM config_roles WHERE permission = ?`
-		args = []interface{}{permid}
 	}
 	_, err := tx.Exec(ctx, query, args...)
 	if err != nil {

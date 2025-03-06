@@ -55,7 +55,6 @@ func (b *Bot) Start(ctx context.Context) error {
 		close(errch)
 	}()
 
-	// Process errors
 	hadErrors := false
 	for err := range errch {
 		if err != nil {
@@ -66,6 +65,7 @@ func (b *Bot) Start(ctx context.Context) error {
 	if hadErrors {
 		return errors.New("Error(s) during bot startup")
 	}
+	b.logger.Info().Msg("Bot startup complete!")
 	return nil
 }
 

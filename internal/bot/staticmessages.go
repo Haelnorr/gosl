@@ -15,6 +15,7 @@ const (
 	messageAdminSelectLogChannel   uint16 = 1
 	messageAdminSelectAdminRoles   uint16 = 2
 	messageAdminSelectManagerRoles uint16 = 3
+	messageAdminTestButton         uint16 = 4
 )
 
 type MessageContents func() (string, *discordgo.MessageEmbed, []discordgo.MessageComponent)

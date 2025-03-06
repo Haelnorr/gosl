@@ -66,10 +66,21 @@ func (b *Bot) selectAdminRolesContents(ctx context.Context) (MessageContents, er
 		return nil, errors.Wrap(err, "b.conn.Begin")
 	}
 	defer tx.Rollback()
-	// TODO: get the values from the DB and set them in defaults
 	b.logger.Debug().Msg("Getting default values for select admin roles components")
+	roles, err := getRolesWithPermission(ctx, tx, permissionAdmin)
+	if err != nil {
+		return nil, errors.Wrap(err, "getRolesWithPermission")
+	}
 	tx.Commit()
 
+	var defaultValues []discordgo.SelectMenuDefaultValue
+	for _, role := range roles {
+		defaultValues = append(defaultValues, discordgo.SelectMenuDefaultValue{
+			ID:   role,
+			Type: discordgo.SelectMenuDefaultValueRole,
+		})
+	}
+	zero := 0
 	return func() (
 		string,
 		*discordgo.MessageEmbed,
@@ -78,24 +89,32 @@ func (b *Bot) selectAdminRolesContents(ctx context.Context) (MessageContents, er
 		b.logger.Debug().Msg("Retreiving select admin roles components")
 		return "",
 			&discordgo.MessageEmbed{
-				Title:       "Admin roles",
-				Description: `Select the roles that should have admin access`,
-				Color:       0x00ff00, // Green color
+				Title: "Admin roles",
+				Description: `
+Select the roles that should have admin access.
+
+**NOTE**
+Users with the discord Administrator permission 
+will have access regardless of the roles set here.`,
+				Color: 0x00ff00, // Green color
 			},
 			[]discordgo.MessageComponent{
 				&discordgo.ActionsRow{
 					Components: []discordgo.MessageComponent{
 						&discordgo.SelectMenu{
-							MenuType:    discordgo.RoleSelectMenu,
-							CustomID:    "admin_role_select",
-							Placeholder: "Select admin roles",
-							MaxValues:   10,
+							MenuType:      discordgo.RoleSelectMenu,
+							CustomID:      "admin_role_select",
+							Placeholder:   "Select admin roles",
+							MinValues:     &zero,
+							MaxValues:     10,
+							DefaultValues: defaultValues,
 						},
 					},
 				},
 			}
 	}, nil
 }
+
 func (b *Bot) selectManagerRolesContents(ctx context.Context) (MessageContents, error) {
 	b.logger.Debug().Msg("Setting up select manager roles components")
 	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -105,10 +124,21 @@ func (b *Bot) selectManagerRolesContents(ctx context.Context) (MessageContents, 
 		return nil, errors.Wrap(err, "b.conn.Begin")
 	}
 	defer tx.Rollback()
-	// TODO: get the values from the DB and set them in defaults
-	b.logger.Debug().Msg("Getting default values for select manager roles components")
+	b.logger.Debug().Msg("Getting default values for select admin roles components")
+	roles, err := getRolesWithPermission(ctx, tx, permissionLeagueManager)
+	if err != nil {
+		return nil, errors.Wrap(err, "getRolesWithPermission")
+	}
 	tx.Commit()
 
+	var defaultValues []discordgo.SelectMenuDefaultValue
+	for _, role := range roles {
+		defaultValues = append(defaultValues, discordgo.SelectMenuDefaultValue{
+			ID:   role,
+			Type: discordgo.SelectMenuDefaultValueRole,
+		})
+	}
+	zero := 0
 	return func() (
 		string,
 		*discordgo.MessageEmbed,
@@ -118,17 +148,19 @@ func (b *Bot) selectManagerRolesContents(ctx context.Context) (MessageContents, 
 		return "",
 			&discordgo.MessageEmbed{
 				Title:       "Manager roles",
-				Description: `Select the roles that should have manager access`,
+				Description: "Select the roles that should have manager access",
 				Color:       0x00ff00, // Green color
 			},
 			[]discordgo.MessageComponent{
 				&discordgo.ActionsRow{
 					Components: []discordgo.MessageComponent{
 						&discordgo.SelectMenu{
-							MenuType:    discordgo.RoleSelectMenu,
-							CustomID:    "manager_role_select",
-							Placeholder: "Select manager roles",
-							MaxValues:   10,
+							MenuType:      discordgo.RoleSelectMenu,
+							CustomID:      "manager_role_select",
+							Placeholder:   "Select manager roles",
+							MinValues:     &zero,
+							MaxValues:     10,
+							DefaultValues: defaultValues,
 						},
 					},
 				},

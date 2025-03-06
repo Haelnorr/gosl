@@ -13,58 +13,6 @@ const (
 	channelAdminName string = "gosl-bot-admin"
 )
 
-func (b *Bot) handleAdminChannelInteractions(ctx context.Context) handler {
-	b.logger.Debug().Msg("Adding handler for admin channel interactions")
-	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if i.Type == discordgo.InteractionMessageComponent {
-			channelID, err := b.getChannel(ctx, channelAdmin)
-			if err != nil {
-				b.logger.Error().Err(err).Msg("failed to get a channel id for the admin channel")
-				panic("unable to get admin channel ID")
-			}
-			if i.Message.ChannelID != channelID {
-				return
-			}
-			b.logger.Debug().Msg("Handling admin channel interaction")
-			timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
-			defer cancel()
-			tx, err := b.conn.Begin(timeout)
-			if err != nil {
-				msg := "Failed to start database transaction"
-				b.logger.Error().Err(err).Msg(msg)
-				errorResponse("Database error occured", &msg, b.files, s, i)
-				return
-			}
-			defer tx.Rollback()
-			// TODO: allow only if user is admin (discord override) or has one
-			// of the set admin roles
-
-			// Handle select menu interactions
-			switch i.MessageComponentData().CustomID {
-			case "log_channel_select":
-				b.logger.Debug().Msg("Handling log channel select interaction")
-				err = handleSelectLogChannelInteraction(ctx, tx, b.logger, s, i)
-			case "admin_role_select":
-				b.logger.Debug().Msg("Handling admin roles select interaction")
-				err = handleSelectAdminRolesInteraction(ctx, tx, b.logger, s, i)
-			case "manager_role_select":
-				b.logger.Debug().Msg("Handling manager roles select interaction")
-				err = handleSelectManagerRolesInteraction(ctx, tx, b.logger, s, i)
-			default:
-				err = errors.New("No handler for interaction")
-			}
-			if err != nil {
-				msg := "Interaction failed"
-				smsg := err.Error()
-				b.logger.Error().Err(err).Msg(msg)
-				errorResponse(msg, &smsg, b.files, s, i)
-				return
-			}
-			tx.Commit()
-		}
-	}
-}
-
 func (b *Bot) setupAdminChannel(
 	wg *sync.WaitGroup,
 	errch chan error,
@@ -85,6 +33,7 @@ func (b *Bot) setupAdminChannel(
 		return
 	}
 	b.session.AddHandler(b.handleAdminChannelInteractions(ctx))
+	b.logger.Info().Msg("Admin channel setup complete")
 }
 
 func (b *Bot) ensureAdminChannel(

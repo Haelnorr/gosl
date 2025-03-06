@@ -36,6 +36,7 @@ func (b *Bot) registerCommands(
 	}
 
 	b.session.AddHandler(b.handleCommandInteractions(ctx))
+	b.logger.Info().Msg("Finished registering commands")
 	return nil
 }
 
