@@ -1,14 +1,15 @@
-package bot
+package messages
 
 import (
-	"bytes"
-	"io/fs"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 )
 
-func (b *Bot) staticReply(
+// Reply to an interaction with a simple message
+func Reply(
 	msg string,
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
@@ -20,18 +21,18 @@ func (b *Bot) staticReply(
 		},
 	})
 	if err != nil {
-		b.logger.Error().Err(err).Str("msg", msg).Msg("Failed to respond")
-		return err
+		return errors.Wrap(err, "s.InteractionRespond")
 	}
 	return nil
 }
 
-// Responds to the interaction with an ephemeral message that deletes after
+// Reply to an interaction with an ephemeral message that deletes after
 // 10 seconds
-func (b *Bot) ephemeralReply(
+func ReplyEphemeral(
 	msg string,
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
+	logger *zerolog.Logger,
 ) error {
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -41,29 +42,16 @@ func (b *Bot) ephemeralReply(
 		},
 	})
 	if err != nil {
-		b.logger.Error().Err(err).Str("msg", msg).Msg("Failed to respond")
-		return err
+		return errors.Wrap(err, "s.InteractionRespond")
 	}
 	// Wait for 10 seconds before deleting
 	go func() {
 		time.Sleep(10 * time.Second) // Adjust timeout as needed
 		err := s.InteractionResponseDelete(i.Interaction)
 		if err != nil {
-			b.logger.Warn().Err(err).Str("msg", msg).
+			logger.Warn().Err(err).Str("msg", msg).
 				Msg("Failed to delete emphemeral message")
 		}
 	}()
 	return nil
-}
-
-func getAsset(name string, files *fs.FS) (*discordgo.File, error) {
-	fileData, err := fs.ReadFile(*files, "assets/"+name)
-	if err != nil {
-		return nil, err
-	}
-	file := &discordgo.File{
-		Name:   "error.png",
-		Reader: bytes.NewReader(fileData),
-	}
-	return file, nil
 }

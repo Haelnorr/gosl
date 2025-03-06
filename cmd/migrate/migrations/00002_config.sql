@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS "config_channels" (
 CREATE TABLE IF NOT EXISTS "config_messages" (
     purpose INTEGER PRIMARY KEY,
     message_id TEXT NOT NULL,
-    channel_id TEXT NOT NULL
+    channel_id TEXT NOT NULL,
+    UNIQUE(message_id, channel_id)
 ) STRICT;
 -- +goose StatementEnd
 

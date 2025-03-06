@@ -1,27 +1,38 @@
-package bot
+package channels
 
 import (
 	"context"
 	"database/sql"
 	"gosl/pkg/db"
-	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
 )
 
 const (
-	channelAdmin         uint16 = 1
-	channelLog           uint16 = 2
-	channelLeagueManager uint16 = 3
+	PurposeAdmin   uint16 = 1 // Channel used for admin panel
+	PurposeLog     uint16 = 2 // Channel used for logging
+	PurposeManager uint16 = 3 // Channel used for league manager panel
 )
 
-func addChannelPurpose(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
+func PurposeName(p uint16) string {
+	purpose := map[uint16]string{
+		PurposeAdmin:   "Admin channel",
+		PurposeLog:     "Log channel",
+		PurposeManager: "League manager channel",
+	}
+	return purpose[p]
+}
+
+// Add a channel to the database with the provided purpose
+func AddPurpose(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
 	query := `INSERT INTO config_channels (channel_id, purpose) VALUES (?, ?) ON CONFLICT DO NOTHING;`
 	_, err := tx.Exec(ctx, query, channelID, purpose)
 	return err
 }
 
-func setChannelPurpose(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
+// Set a channel in the database as the only channel with the provided purpose
+func SetPurpose(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
 	var count int
 	query := `SELECT COUNT(*) FROM config_channels WHERE purpose = ?;`
 	row, err := tx.QueryRow(ctx, query, purpose)
@@ -48,13 +59,15 @@ func setChannelPurpose(ctx context.Context, tx *db.SafeWTX, channelID string, pu
 	return nil
 }
 
-func removeChannelPurpose(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
+// Remove a channel from the database with the provided purpose
+func RemovePurpose(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
 	query := `DELETE FROM config_channels WHERE channel_id = ? AND purpose = ?;`
 	_, err := tx.Exec(ctx, query, channelID, purpose)
 	return err
 }
 
-func queryChannelForPurpose(
+// Get a single channel that has the purpose provided set in the database
+func GetChannel(
 	ctx context.Context,
 	tx db.SafeTX,
 	purpose uint16,
@@ -74,7 +87,9 @@ func queryChannelForPurpose(
 	}
 	return channelID, nil
 }
-func queryChannelsForPurpose(
+
+// Get all the channels from the database with the provided purpose
+func GetChannels(
 	ctx context.Context,
 	tx db.SafeTX,
 	purpose uint16,
@@ -102,27 +117,11 @@ func queryChannelsForPurpose(
 	return channelIDs, nil
 }
 
-func (b *Bot) checkChannelExists(channelID string) bool {
+// Check with the discord API if the channel exists
+func CheckExists(channelID string, s *discordgo.Session) bool {
 	if channelID == "" {
 		return false
 	}
-	_, err := b.session.Channel(channelID)
+	_, err := s.Channel(channelID)
 	return err == nil
-}
-
-func (b *Bot) getChannel(ctx context.Context, purpose uint16) (string, error) {
-	b.logger.Debug().Uint16("purpose", purpose).Msg("Getting channel ID")
-	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	tx, err := b.conn.Begin(timeout)
-	if err != nil {
-		return "", errors.Wrap(err, "conn.Begin")
-	}
-	channelID, err := queryChannelForPurpose(ctx, tx, purpose)
-	if err != nil {
-		tx.Rollback()
-		return "", errors.Wrap(err, "getChannelsForPurpose")
-	}
-	tx.Commit()
-	return channelID, nil
 }

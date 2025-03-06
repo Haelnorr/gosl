@@ -1,4 +1,4 @@
-package bot
+package permissions
 
 import (
 	"context"
@@ -11,11 +11,12 @@ import (
 )
 
 const (
-	permissionAdmin         uint16 = 1
-	permissionLeagueManager uint16 = 2
+	Admin         uint16 = 1 // Admin permission
+	LeagueManager uint16 = 2 // League Manager permission
 )
 
-func addPermission(ctx context.Context, tx *db.SafeWTX, roleid string, perm uint16) error {
+// Add a permission to the provided role
+func Add(ctx context.Context, tx *db.SafeWTX, roleid string, perm uint16) error {
 	query := `
 INSERT INTO config_roles (role_id, permission) 
 VALUES (?, ?) ON CONFLICT DO NOTHING;
@@ -23,7 +24,7 @@ VALUES (?, ?) ON CONFLICT DO NOTHING;
 	_, err := tx.Exec(ctx, query, roleid, perm)
 	return err
 }
-func removePermission(ctx context.Context, tx *db.SafeWTX, roleid string, perm uint16) error {
+func Remove(ctx context.Context, tx *db.SafeWTX, roleid string, perm uint16) error {
 	query := `
 DELETE FROM config_roles WHERE role_id = ? AND permission = ?;
 `
@@ -31,18 +32,15 @@ DELETE FROM config_roles WHERE role_id = ? AND permission = ?;
 	return err
 }
 
-func hasPermission(
+// Check if the provided role has the provided permission
+func HasPermission(
 	ctx context.Context,
 	tx db.SafeTX,
 	s *discordgo.Session,
 	guildID string,
-	user *discordgo.User,
+	member *discordgo.Member,
 	permid uint16,
 ) (bool, error) {
-	member, err := s.GuildMember(guildID, user.ID)
-	if err != nil {
-		return false, errors.Wrap(err, "s.GuildMember")
-	}
 	admin := member.Permissions&discordgo.PermissionAdministrator != 0
 	if admin {
 		return true, nil
@@ -72,7 +70,8 @@ SELECT 1 FROM config_roles WHERE
 	return err == nil, err
 }
 
-func getRolesWithPermission(
+// Get all roles with the provided permission
+func GetRoles(
 	ctx context.Context,
 	tx db.SafeTX,
 	permid uint16,
@@ -97,7 +96,7 @@ func getRolesWithPermission(
 
 // Grants the permission to the provided roles and removes it from any roles
 // not provided
-func setRolesForPermission(
+func SetRoles(
 	ctx context.Context,
 	tx *db.SafeWTX,
 	roles []string,
@@ -111,10 +110,9 @@ func setRolesForPermission(
         DELETE FROM config_roles WHERE permission = ?
         AND role_id NOT IN (` + strings.Repeat("?,", len(roles)-1) + `?);
         `
-		args = append(args, permid)
 		for _, role := range roles {
 			args = append(args, role)
-			err := addPermission(ctx, tx, role, permid)
+			err := Add(ctx, tx, role, permid)
 			if err != nil {
 				return errors.Wrap(err, "addPermission")
 			}
