@@ -95,8 +95,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 
 	// Initialize the discord bot
 	discordBot, err := bot.NewBot(
-		config.DiscordBotToken,
-		config.DiscordGuildID,
+		config,
 		conn,
 		logger,
 		&staticFS,

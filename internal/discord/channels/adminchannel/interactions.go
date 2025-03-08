@@ -19,27 +19,30 @@ func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
 			timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 			defer cancel()
 			tx, err := b.Conn.Begin(timeout)
+			msg := "Failed to handle interaction in admin channel"
 			if err != nil {
-				msg := "Failed to start database transaction"
 				b.Logger.Error().Err(err).Msg(msg)
-				b.Error("Database error occured", &msg, s, i)
+				b.Error(msg, err.Error(), s, i)
+				b.Log().Error(msg, err)
 				return
 			}
 			defer tx.Rollback()
 			channelID, err := channels.GetChannel(ctx, tx, channels.PurposeAdmin)
 			if err != nil {
-				b.Logger.Error().Err(err).Msg("failed to get a channel id for the admin channel")
-				panic("unable to get admin channel ID")
+				b.Logger.Error().Err(err).Msg(msg)
+				b.Error(msg, err.Error(), s, i)
+				b.Log().Error(msg, err)
+				return
 			}
 			if i.Message.ChannelID != channelID {
 				return
 			}
 			b.Logger.Debug().Msg("Handling admin channel interaction")
 			isAdmin, err := permissions.HasPermission(
-				ctx, tx, s, b.GuildID, i.Member, permissions.Admin)
+				ctx, tx, s, b.Config.DiscordGuildID, i.Member, permissions.Admin)
 			if !isAdmin {
 				msg := "You do not have permission for this action"
-				b.Error("Forbidden", &msg, s, i)
+				b.Error("Forbidden", msg, s, i)
 				return
 			}
 
@@ -58,10 +61,10 @@ func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
 				err = errors.New("No handler for interaction")
 			}
 			if err != nil {
-				msg := "Interaction failed"
-				smsg := err.Error()
+				msg := "Failed to handle interaction in admin channel"
 				b.Logger.Error().Err(err).Msg(msg)
-				b.Error(msg, &smsg, s, i)
+				b.Error(msg, err.Error(), s, i)
+				b.Log().Error(msg, err)
 				return
 			}
 			tx.Commit()

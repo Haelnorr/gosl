@@ -9,6 +9,7 @@ func ChannelSelect(
 	defaults []discordgo.SelectMenuDefaultValue,
 	minValues int,
 	maxValues int,
+	channelTypes []discordgo.ChannelType,
 ) []discordgo.MessageComponent {
 	return []discordgo.MessageComponent{
 		&discordgo.ActionsRow{
@@ -20,6 +21,7 @@ func ChannelSelect(
 					DefaultValues: defaults,
 					MinValues:     &minValues,
 					MaxValues:     maxValues,
+					ChannelTypes:  channelTypes,
 				},
 			},
 		},
@@ -44,6 +46,30 @@ func RoleSelect(
 					DefaultValues: defaults,
 					MinValues:     &minValues,
 					MaxValues:     maxValues,
+				},
+			},
+		},
+	}
+}
+
+// Return RoleSelectMenu component wrapped in an ActionsRow
+func StringSelect(
+	customid string,
+	placeholder string,
+	options []discordgo.SelectMenuOption,
+	minValues int,
+	maxValues int,
+) []discordgo.MessageComponent {
+	return []discordgo.MessageComponent{
+		&discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				&discordgo.SelectMenu{
+					MenuType:    discordgo.StringSelectMenu,
+					CustomID:    customid,
+					Placeholder: placeholder,
+					Options:     options,
+					MinValues:   &minValues,
+					MaxValues:   maxValues,
 				},
 			},
 		},

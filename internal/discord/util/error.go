@@ -8,7 +8,7 @@ import (
 // Send an ephemeral error message to the user with details of the error
 func (b *Bot) Error(
 	pMsg string,
-	sMsg *string,
+	sMsg string,
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
@@ -21,14 +21,10 @@ func (b *Bot) Error(
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   pMsg,
-				Value:  "\u200b",
+				Value:  sMsg,
 				Inline: false,
 			},
 		},
-	}
-
-	if sMsg != nil {
-		embed.Fields[0].Value = *sMsg
 	}
 	errIco, err := GetAsset("error.png", b.Files)
 	if err != nil {

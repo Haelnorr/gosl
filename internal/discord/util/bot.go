@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"gosl/pkg/config"
 	"gosl/pkg/db"
 	"io/fs"
 	"sync"
@@ -17,7 +18,7 @@ type Bot struct {
 	Logger     *zerolog.Logger
 	Files      *fs.FS
 	Conn       *db.SafeConn
-	GuildID    string
+	Config     *config.Config
 }
 
 // Function for setting up a bot package concurrently

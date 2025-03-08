@@ -10,8 +10,8 @@ import (
 )
 
 type SafeTX interface {
-	Query(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
-	QueryRow(ctx context.Context, query string, args ...interface{}) (*sql.Row, error)
+	Query(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+	QueryRow(ctx context.Context, query string, args ...any) (*sql.Row, error)
 	Commit() error
 	Rollback() error
 }
@@ -38,7 +38,7 @@ func isWriteOperation(query string) bool {
 func (stx *SafeRTX) Query(
 	ctx context.Context,
 	query string,
-	args ...interface{},
+	args ...any,
 ) (*sql.Rows, error) {
 	if stx.tx == nil {
 		return nil, errors.New("Cannot query without a transaction")
@@ -57,7 +57,7 @@ func (stx *SafeRTX) Query(
 func (stx *SafeWTX) Query(
 	ctx context.Context,
 	query string,
-	args ...interface{},
+	args ...any,
 ) (*sql.Rows, error) {
 	if stx.tx == nil {
 		return nil, errors.New("Cannot query without a transaction")
@@ -76,7 +76,7 @@ func (stx *SafeWTX) Query(
 func (stx *SafeRTX) QueryRow(
 	ctx context.Context,
 	query string,
-	args ...interface{},
+	args ...any,
 ) (*sql.Row, error) {
 	if stx.tx == nil {
 		return nil, errors.New("Cannot query without a transaction")
@@ -91,7 +91,7 @@ func (stx *SafeRTX) QueryRow(
 func (stx *SafeWTX) QueryRow(
 	ctx context.Context,
 	query string,
-	args ...interface{},
+	args ...any,
 ) (*sql.Row, error) {
 	if stx.tx == nil {
 		return nil, errors.New("Cannot query without a transaction")
@@ -106,7 +106,7 @@ func (stx *SafeWTX) QueryRow(
 func (stx *SafeWTX) Exec(
 	ctx context.Context,
 	query string,
-	args ...interface{},
+	args ...any,
 ) (sql.Result, error) {
 	if stx.tx == nil {
 		return nil, errors.New("Cannot exec without a transaction")

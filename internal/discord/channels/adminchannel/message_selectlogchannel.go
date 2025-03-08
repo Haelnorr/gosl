@@ -56,6 +56,7 @@ func selectLogChannelContents(
 				defaultValues,
 				1,
 				1,
+				[]discordgo.ChannelType{discordgo.ChannelTypeGuildText},
 			)
 	}, nil
 }

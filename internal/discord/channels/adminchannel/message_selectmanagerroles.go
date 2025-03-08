@@ -85,7 +85,7 @@ func handleSelectManagerRolesInteraction(
 	// Spin off updating the message so it doesnt block/get blocked by the transaction
 	// and runs as soon as the interaction is completed
 	go func() {
-		b.Logger.Debug().Msg("Updating log channel select")
+		b.Logger.Debug().Msg("Updating manager roles select")
 		err = messages.UpdateChannelMessage(
 			ctx,
 			b,

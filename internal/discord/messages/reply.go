@@ -26,6 +26,28 @@ func Reply(
 	return nil
 }
 
+// Reply to an interaction with a modal
+func ReplyModal(
+	title string,
+	customID string,
+	components []discordgo.MessageComponent,
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+) error {
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseModal,
+		Data: &discordgo.InteractionResponseData{
+			Title:      title,
+			CustomID:   customID,
+			Components: components,
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "s.InteractionRespond")
+	}
+	return nil
+}
+
 // Reply to an interaction with an ephemeral message that deletes after
 // 10 seconds
 func ReplyEphemeral(

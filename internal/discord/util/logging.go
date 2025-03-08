@@ -6,8 +6,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// TODO: find all logger calls and determine if logging to log file is needed
-
 // Log message object for logging to discord channel
 type logmsg struct {
 	b       *Bot

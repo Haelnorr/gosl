@@ -32,6 +32,7 @@ type Config struct {
 	LogDir             string        // Path to create log files
 	DiscordBotToken    string        // Discord Bot Token
 	DiscordGuildID     string        // ID of the discord server
+	Locale             string        // IANA TZ Locale
 }
 
 // Load the application configuration and get a pointer to the Config object
@@ -89,7 +90,7 @@ func GetConfig(args map[string]string) (*Config, error) {
 		ReadHeaderTimeout:  GetEnvDur("READ_HEADER_TIMEOUT", 2),
 		WriteTimeout:       GetEnvDur("WRITE_TIMEOUT", 10),
 		IdleTimeout:        GetEnvDur("IDLE_TIMEOUT", 120),
-		DBName:             "00002",
+		DBName:             "00003",
 		DBLockTimeout:      GetEnvDur("DB_LOCK_TIMEOUT", 60),
 		SecretKey:          os.Getenv("SECRET_KEY"),
 		AccessTokenExpiry:  GetEnvInt64("ACCESS_TOKEN_EXPIRY", 5),
@@ -100,6 +101,7 @@ func GetConfig(args map[string]string) (*Config, error) {
 		LogDir:             GetEnvDefault("LOG_DIR", ""),
 		DiscordBotToken:    os.Getenv("DISCORD_BOT_TOKEN"),
 		DiscordGuildID:     os.Getenv("DISCORD_GUILD_ID"),
+		Locale:             GetEnvDefault("LOCALE_TZ", "UTC"),
 	}
 
 	if config.SecretKey == "" && args["dbver"] != "true" {
@@ -110,6 +112,11 @@ func GetConfig(args map[string]string) (*Config, error) {
 	}
 	if config.DiscordGuildID == "" && args["dbver"] != "true" {
 		return nil, errors.New("Envar not set: DISCORD_GUILD_ID")
+	}
+
+	_, err := time.LoadLocation(config.Locale)
+	if err != nil {
+		return nil, errors.New("LOCALE_TZ envar not a valid IANA TZ identifier")
 	}
 
 	return config, nil

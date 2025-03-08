@@ -78,7 +78,7 @@ func CreateNew(
 	purposeName := PurposeName(purpose)
 	b.Logger.Debug().Str("channel", purposeName).Msg("Creating new channel")
 	channel, err := b.Session.GuildChannelCreate(
-		b.GuildID, name, discordgo.ChannelTypeGuildText)
+		b.Config.DiscordGuildID, name, discordgo.ChannelTypeGuildText)
 	if err != nil {
 		return "", errors.Wrap(err, "b.Session.GuildChannelCreate")
 	}
