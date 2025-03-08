@@ -15,6 +15,15 @@ const (
 	PurposeManager uint16 = 3 // Channel used for league manager panel
 )
 
+func PurposeName(p uint16) string {
+	purpose := map[uint16]string{
+		PurposeAdmin:   "Admin channel",
+		PurposeLog:     "Log channel",
+		PurposeManager: "League manager channel",
+	}
+	return purpose[p]
+}
+
 // Add a channel to the database with the provided purpose
 func AddPurpose(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
 	query := `INSERT INTO config_channels (channel_id, purpose) VALUES (?, ?) ON CONFLICT DO NOTHING;`
