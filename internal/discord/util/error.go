@@ -1,16 +1,14 @@
-package bot
+package util
 
 import (
-	"io/fs"
-
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
 )
 
-func errorResponse(
+// Send an ephemeral error message to the user with details of the error
+func (b *Bot) Error(
 	pMsg string,
 	sMsg *string,
-	files *fs.FS,
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
@@ -32,7 +30,7 @@ func errorResponse(
 	if sMsg != nil {
 		embed.Fields[0].Value = *sMsg
 	}
-	errIco, err := getAsset("error.png", files)
+	errIco, err := GetAsset("error.png", b.Files)
 	if err != nil {
 		return errors.Wrap(err, "getAsset")
 	}

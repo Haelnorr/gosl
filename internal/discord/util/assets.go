@@ -1,4 +1,4 @@
-package bot
+package util
 
 import (
 	"bytes"
@@ -7,7 +7,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func getAsset(name string, files *fs.FS) (*discordgo.File, error) {
+// Get the asset with the provided name from the filesystem
+func GetAsset(name string, files *fs.FS) (*discordgo.File, error) {
 	fileData, err := fs.ReadFile(*files, "assets/"+name)
 	if err != nil {
 		return nil, err

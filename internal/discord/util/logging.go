@@ -1,4 +1,4 @@
-package bot
+package util
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 
 // TODO: find all logger calls and determine if logging to log file is needed
 
+// Log message object for logging to discord channel
 type logmsg struct {
 	b       *Bot
 	level   string
@@ -15,21 +16,20 @@ type logmsg struct {
 	color   int
 }
 
-func (b *Bot) setLogChannel(channelID string) {
-	b.logchannel = channelID
-}
-
+// Create a new logmsg
 func (b *Bot) Log() *logmsg {
 	return &logmsg{b: b}
 }
 
-func (l *logmsg) Error(err error) {
+// Send the logmsg as an error message
+func (l *logmsg) Error(msg string, err error) {
 	l.level = "Error"
-	l.message = err.Error()
+	l.message = msg + "\n" + err.Error()
 	l.color = 0xff0000
-	l.b.createStaticMessage(l.logMsgContents(), l.b.logchannel)
+	createComplexMessage(l.logMsgContents(), l.b.Logchannel, l.b.Session)
 }
 
+// Send the logmsg as a user event
 func (l *logmsg) UserEvent(user *discordgo.Member, msg string) {
 	l.level = "User Event"
 	evtmsg := `
@@ -40,14 +40,15 @@ func (l *logmsg) UserEvent(user *discordgo.Member, msg string) {
 `
 	l.message = fmt.Sprintf(evtmsg, user.User.Username, msg)
 	l.color = 0x0096FF
-	l.b.createStaticMessage(l.logMsgContents(), l.b.logchannel)
+	createComplexMessage(l.logMsgContents(), l.b.Logchannel, l.b.Session)
 }
 
+// Send the logmsg as an info event
 func (l *logmsg) Info(msg string) {
 	l.level = "Info"
 	l.message = msg
 	l.color = 0x00ff00
-	l.b.createStaticMessage(l.logMsgContents(), l.b.logchannel)
+	createComplexMessage(l.logMsgContents(), l.b.Logchannel, l.b.Session)
 }
 
 func (l *logmsg) logMsgContents() MessageContents {

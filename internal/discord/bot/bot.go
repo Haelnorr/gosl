@@ -2,6 +2,10 @@ package bot
 
 import (
 	"context"
+	"gosl/internal/discord/channels/adminchannel"
+	logchannel "gosl/internal/discord/channels/loggingchannel"
+	"gosl/internal/discord/commands"
+	"gosl/internal/discord/util"
 	"gosl/pkg/db"
 	"io/fs"
 	"sync"
@@ -11,40 +15,31 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type Bot struct {
-	session    *discordgo.Session
-	logchannel string
-	logger     *zerolog.Logger
-	commands   []*command
-	files      *fs.FS
-	conn       *db.SafeConn
-	guildID    string
-}
-
+// Create a new discord bot and open a session
 func NewBot(
 	token string,
 	guildID string,
 	conn *db.SafeConn,
 	logger *zerolog.Logger,
 	fs *fs.FS,
-) (*Bot, error) {
+) (*util.Bot, error) {
 	session, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, errors.Wrap(err, "discordgo.New")
 	}
-	b := &Bot{session: session, logger: logger, files: fs, conn: conn, guildID: guildID}
-	b.setupCommands()
+	b := &util.Bot{Session: session, Logger: logger, Files: fs, Conn: conn, GuildID: guildID}
 	return b, nil
 }
 
-func (b *Bot) Start(ctx context.Context) error {
-	err := b.session.Open()
+// Start the bot
+func Start(ctx context.Context, b *util.Bot) error {
+	err := b.Session.Open()
 	if err != nil {
 		return errors.Wrap(err, "b.session.Open")
 	}
 
 	// Setup log channel first so startup issues can be reported in discord
-	err = b.setupLogChannel(ctx)
+	err = logchannel.Setup(ctx, b)
 	if err != nil {
 		return errors.Wrap(err, "b.setupLogChannel")
 	}
@@ -53,10 +48,17 @@ func (b *Bot) Start(ctx context.Context) error {
 	var wg sync.WaitGroup
 	errch := make(chan error, 10)
 
-	wg.Add(1)
-	go b.registerCommands(&wg, errch, ctx)
-	wg.Add(1)
-	go b.setupAdminChannel(&wg, errch, ctx)
+	// Add the setup commands here
+	setups := []util.SetupFunc{
+		commands.Setup,
+		adminchannel.Setup,
+	}
+
+	// Run all the setup commands
+	for _, setup := range setups {
+		wg.Add(1)
+		go setup(&wg, errch, ctx, b)
+	}
 
 	go func() {
 		wg.Wait()
@@ -66,20 +68,21 @@ func (b *Bot) Start(ctx context.Context) error {
 	hadErrors := false
 	for err := range errch {
 		if err != nil {
-			b.logger.Error().Err(err).Msg("Error in bot startup")
+			b.Logger.Error().Err(err).Msg("Error in bot startup")
 			hadErrors = true
 		}
 	}
 	if hadErrors {
 		return errors.New("Error(s) during bot startup")
 	}
-	b.logger.Info().Msg("Bot startup complete!")
+	b.Logger.Info().Msg("Bot startup complete!")
 	b.Log().Info("Bot startup complete")
 	return nil
 }
 
-func (b *Bot) Stop() error {
-	err := b.session.Close()
+// Stop the bot
+func Stop(b *util.Bot) error {
+	err := b.Session.Close()
 	if err != nil {
 		return err
 	}
