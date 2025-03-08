@@ -16,6 +16,8 @@ const (
 	AdminSelectLogChannel   uint16 = 1 // Admin channel: select log channel component
 	AdminSelectAdminRoles   uint16 = 2 // Admin channel: select admin roles component
 	AdminSelectManagerRoles uint16 = 3 // Admin channel: select manager roles component
+
+	ManagerSelectSeason uint16 = 4 // Manager channel: select season component
 )
 
 // Set the provided message as the message used for the provided purpose

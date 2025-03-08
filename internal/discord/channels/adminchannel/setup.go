@@ -4,11 +4,8 @@ import (
 	"context"
 	"gosl/internal/discord/channels/channels"
 	"gosl/internal/discord/util"
-	"gosl/pkg/db"
 	"sync"
-	"time"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
 )
 
@@ -36,7 +33,7 @@ func Setup(
 
 	err = updateMessages(ctx, channelID, b)
 	if err != nil {
-		errch <- errors.Wrap(err, "updateMessages")
+		errch <- errors.Wrap(err, "updateMessages (admin channel)")
 		return
 	}
 	b.Session.AddHandler(handleInteractions(ctx, b))

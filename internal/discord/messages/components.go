@@ -49,3 +49,29 @@ func RoleSelect(
 		},
 	}
 }
+
+// Return RoleSelectMenu component wrapped in an ActionsRow
+func StringSelect(
+	customid string,
+	placeholder string,
+	defaults []discordgo.SelectMenuDefaultValue,
+	options []discordgo.SelectMenuOption,
+	minValues int,
+	maxValues int,
+) []discordgo.MessageComponent {
+	return []discordgo.MessageComponent{
+		&discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				&discordgo.SelectMenu{
+					MenuType:      discordgo.StringSelectMenu,
+					CustomID:      customid,
+					Placeholder:   placeholder,
+					DefaultValues: defaults,
+					Options:       options,
+					MinValues:     &minValues,
+					MaxValues:     maxValues,
+				},
+			},
+		},
+	}
+}

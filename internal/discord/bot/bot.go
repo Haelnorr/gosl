@@ -4,6 +4,7 @@ import (
 	"context"
 	"gosl/internal/discord/channels/adminchannel"
 	logchannel "gosl/internal/discord/channels/loggingchannel"
+	"gosl/internal/discord/channels/managerchannel"
 	"gosl/internal/discord/commands"
 	"gosl/internal/discord/util"
 	"gosl/pkg/db"
@@ -52,6 +53,7 @@ func Start(ctx context.Context, b *util.Bot) error {
 	setups := []util.SetupFunc{
 		commands.Setup,
 		adminchannel.Setup,
+		managerchannel.Setup,
 	}
 
 	// Run all the setup commands
@@ -65,14 +67,20 @@ func Start(ctx context.Context, b *util.Bot) error {
 		close(errch)
 	}()
 
-	hadErrors := false
+	var boterrors []error
 	for err := range errch {
 		if err != nil {
 			b.Logger.Error().Err(err).Msg("Error in bot startup")
-			hadErrors = true
+			boterrors = append(boterrors, err)
 		}
 	}
-	if hadErrors {
+	if len(boterrors) > 0 {
+		msg := "\n"
+		for _, err := range boterrors {
+			msg = msg + "Error: " + err.Error() + "\n\n"
+		}
+		err = errors.New(msg)
+		b.Log().Error("**Error(s) during bot startup**", err)
 		return errors.New("Error(s) during bot startup")
 	}
 	b.Logger.Info().Msg("Bot startup complete!")
