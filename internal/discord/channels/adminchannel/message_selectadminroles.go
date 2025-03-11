@@ -2,6 +2,7 @@ package adminchannel
 
 import (
 	"context"
+	"gosl/internal/discord/channels/channels"
 	"gosl/internal/discord/messages"
 	"gosl/internal/discord/permissions"
 	"gosl/internal/discord/util"
@@ -12,13 +13,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+var selectAdminRoles = &messages.ChannelMessage{
+	Label:        "Select Admin Roles",
+	Purpose:      messages.AdminSelectAdminRoles,
+	Channel:      channels.PurposeAdmin,
+	ContentsFunc: selectAdminRolesContents,
+}
+
 // Get the message contents for the select admin roles component
 func selectAdminRolesContents(
 	ctx context.Context,
 	b *util.Bot,
 ) (util.MessageContents, error) {
 	b.Logger.Debug().Msg("Setting up select admin roles components")
-	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 	tx, err := b.Conn.Begin(timeout)
 	if err != nil {
@@ -74,7 +82,6 @@ func handleSelectAdminRolesInteraction(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
-	thisChannel := i.ChannelID
 	roles := i.MessageComponentData().Values
 	err := permissions.SetRoles(ctx, tx, roles, permissions.Admin)
 	if err != nil {
@@ -91,13 +98,7 @@ func handleSelectAdminRolesInteraction(
 	// and runs as soon as the interaction is completed
 	go func() {
 		b.Logger.Debug().Msg("Updating admin roles select")
-		err = messages.UpdateChannelMessage(
-			ctx,
-			b,
-			selectAdminRolesContents,
-			messages.AdminSelectAdminRoles,
-			thisChannel,
-		)
+		err = messages.UpdateChannelMessage(ctx, b, selectAdminRoles)
 		if err != nil {
 			b.Logger.Warn().Err(err).
 				Msg("Failed to update select log channel message after interaction")

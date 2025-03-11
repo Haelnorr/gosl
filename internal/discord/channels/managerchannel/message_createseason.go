@@ -13,6 +13,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+var createSeason = &messages.ChannelMessage{
+	Label:        "Create Season",
+	Purpose:      messages.ManagerCreateSeason,
+	Channel:      channels.PurposeManager,
+	ContentsFunc: createSeasonComponents,
+}
+
 // Get the message contents for the create season component
 func createSeasonComponents(
 	ctx context.Context,
@@ -105,26 +112,11 @@ func handleCreateSeasonModalInteraction(
 	b.Log().UserEvent(i.Member, msg)
 	messages.ReplyEphemeral(msg, s, i, b.Logger)
 
-	channelID, err := channels.GetChannel(ctx, tx, channels.PurposeManager)
-	if err != nil {
-		msg = "Failed to get update manager channel after season creation"
-		b.Logger.Warn().Err(err).
-			Msg(msg)
-		b.Log().Error(msg, err)
-		return nil
-	}
-
 	// Spin off updating the message so it doesnt block/get blocked by the transaction
 	// and runs as soon as the interaction is completed
 	go func() {
 		b.Logger.Debug().Msg("Updating season select")
-		err := messages.UpdateChannelMessage(
-			ctx,
-			b,
-			selectSeasonComponents,
-			messages.ManagerSelectSeason,
-			channelID,
-		)
+		err := messages.UpdateChannelMessage(ctx, b, selectSeason)
 		if err != nil {
 			msg := "Failed to update select season message after interaction"
 			b.Logger.Warn().Err(err).

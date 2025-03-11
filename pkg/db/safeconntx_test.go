@@ -52,6 +52,14 @@ func TestSafeConn(t *testing.T) {
 		assert.Equal(t, uint32(0), sconn.globalLockRequested)
 		tx.Commit()
 	})
+	t.Run("TX abandons after timeout", func(t *testing.T) {
+		sconn.Pause(250 * time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 250*time.Millisecond)
+		defer cancel()
+		_, err = sconn.Begin(ctx)
+		require.Error(t, err)
+		sconn.Resume()
+	})
 	t.Run("Pause blocks transactions and resume allows", func(t *testing.T) {
 		tx, err := sconn.Begin(t.Context())
 		require.NoError(t, err)

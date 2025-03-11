@@ -15,14 +15,12 @@ func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
 	b.Logger.Debug().Msg("Adding handler for manager channel interactions")
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// setup the database transaction
-		timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+		timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
 		defer cancel()
 		tx, err := b.Conn.Begin(timeout)
 		msg := "Failed to handle interaction in manager channel"
 		if err != nil {
-			b.Logger.Error().Err(err).Msg(msg)
-			b.Error(msg, err.Error(), s, i)
-			b.Log().Error(msg, err)
+			b.TripleError(msg, err, s, i)
 			return
 		}
 		defer tx.Rollback()
@@ -30,10 +28,7 @@ func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
 		// Make sure interaction happened from manager channel
 		channelID, err := channels.GetChannel(ctx, tx, channels.PurposeManager)
 		if err != nil {
-			b.Logger.Error().Err(err).
-				Msg(msg)
-			b.Log().Error(msg, err)
-			b.Error(msg, err.Error(), s, i)
+			b.TripleError(msg, err, s, i)
 			return
 		}
 		if i.Message.ChannelID != channelID {
@@ -45,8 +40,7 @@ func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
 		isLeagueManager, err := permissions.HasPermission(
 			ctx, tx, s, b.Config.DiscordGuildID, i.Member, permissions.LeagueManager)
 		if !isLeagueManager {
-			msg := "You do not have permission for this action"
-			b.Error("Forbidden", msg, s, i)
+			b.Forbidden(s, i)
 			return
 		}
 
@@ -90,9 +84,7 @@ func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
 		// start error handling for the interaction handlers
 		if err != nil {
 			msg := "Failed to handle interaction in manager channel"
-			b.Logger.Error().Err(err).Msg(msg)
-			b.Error(msg, err.Error(), s, i)
-			b.Log().Error(msg, err)
+			b.TripleError(msg, err, s, i)
 			return
 		}
 		tx.Commit()

@@ -18,7 +18,7 @@ func Setup(
 	b *util.Bot,
 ) error {
 	b.Logger.Debug().Msg("Setting up log channel")
-	channelID, err := channels.Setup(ctx, b, channels.PurposeLog, logChannelName)
+	channelID, err := channels.CreateOrFindChannel(ctx, b, channels.PurposeLog, logChannelName)
 	if err != nil {
 		return errors.Wrap(err, "channels.Setup (log channel)")
 	}

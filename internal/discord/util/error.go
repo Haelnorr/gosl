@@ -41,3 +41,13 @@ func (b *Bot) Error(
 	})
 
 }
+
+// Helper function to send a Error response to the user advising them they
+// do not have permission to perform the action
+func (b *Bot) Forbidden(
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+) error {
+	msg := "You do not have permission for this action"
+	return b.Error("Forbidden", msg, s, i)
+}

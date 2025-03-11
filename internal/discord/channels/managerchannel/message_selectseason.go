@@ -2,6 +2,7 @@ package managerchannel
 
 import (
 	"context"
+	"gosl/internal/discord/channels/channels"
 	"gosl/internal/discord/messages"
 	"gosl/internal/discord/util"
 	"gosl/internal/models"
@@ -12,13 +13,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+var selectSeason = &messages.ChannelMessage{
+	Label:        "Select Active Season",
+	Purpose:      messages.ManagerSelectSeason,
+	Channel:      channels.PurposeManager,
+	ContentsFunc: selectSeasonComponents,
+}
+
 // Get the message contents for the select active season component
 func selectSeasonComponents(
 	ctx context.Context,
 	b *util.Bot,
 ) (util.MessageContents, error) {
 	b.Logger.Debug().Msg("Setting up select season components")
-	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 	tx, err := b.Conn.Begin(timeout)
 	if err != nil {
@@ -87,7 +95,6 @@ func handleSelectSeasonInteraction(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
-	thisChannel := i.ChannelID
 	season := i.MessageComponentData().Values[0]
 	err := models.SetActiveSeason(ctx, tx, season)
 	if err != nil {
@@ -101,25 +108,13 @@ func handleSelectSeasonInteraction(
 	// and runs as soon as the interaction is completed
 	go func() {
 		b.Logger.Debug().Msg("Updating season select")
-		err := messages.UpdateChannelMessage(
-			ctx,
-			b,
-			selectSeasonComponents,
-			messages.ManagerSelectSeason,
-			thisChannel,
-		)
+		err := messages.UpdateChannelMessage(ctx, b, selectSeason)
 		if err != nil {
 			b.Logger.Warn().Err(err).
 				Msg("Failed to update select active season message after interaction")
 		}
 		b.Logger.Debug().Msg("Updating active season info")
-		err = messages.UpdateChannelMessage(
-			ctx,
-			b,
-			activeSeasonComponents,
-			messages.ManagerActiveSeason,
-			thisChannel,
-		)
+		err = messages.UpdateChannelMessage(ctx, b, activeSeasonInfo)
 		if err != nil {
 			b.Logger.Warn().Err(err).
 				Msg("Failed to update active season message after interaction")

@@ -1,23 +1,27 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATETABLEIFNOTEXISTS"config_roles"(
-    permissionINTEGERNOTNULL,
-    role_idTEXTNOTNULLPRIMARYKEY(permission, role_id)
+CREATE TABLE IF NOT EXISTS config_roles(
+    permission INTEGER NOT NULL,
+    role_id TEXT NOT NULL,
+    PRIMARY KEY(permission, role_id)
 ) STRICT;
-CREATETABLEIFNOTEXISTS"config_channels"(
-purposeINTEGERNOTNULL,
-channel_idTEXTNOTNULLPRIMARYKEY(purpose, channel_id)
+
+CREATE TABLE IF NOT EXISTS config_channels(
+    purpose INTEGER NOT NULL,
+    channel_id TEXT NOT NULL,
+    PRIMARY KEY(purpose, channel_id)
 ) STRICT;
-CREATETABLEIFNOTEXISTS"config_messages"(
-purposeINTEGERPRIMARYKEY,
-message_idTEXTNOTNULL,
-channel_idTEXTNOTNULL,
-UNIQUE(message_id, channel_id)
+
+CREATE TABLE IF NOT EXISTS config_messages(
+    purpose INTEGER PRIMARY KEY,
+    message_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL,
+    UNIQUE(message_id, channel_id)
 ) STRICT;
 -- +goose StatementEnd
 -- +goose Down
 -- +goose StatementBegin
-DROPTABLEIFEXISTS"config_roles";
-DROPTABLEIFEXISTS"config_channels";
-DROPTABLEIFEXISTS"config_messages";
+DROP TABLE IF EXISTS config_roles;
+DROP TABLE IF EXISTS config_channels;
+DROP TABLE IF EXISTS config_messages;
 -- +goose StatementEnd

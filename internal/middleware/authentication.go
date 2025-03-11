@@ -123,7 +123,7 @@ func Authentication(
 			handler.ErrorPage(http.StatusServiceUnavailable, w, r)
 			return
 		}
-		user, err := getAuthenticatedUser(config, ctx, tx, w, r)
+		user, err := getAuthenticatedUser(config, r.Context(), tx, w, r)
 		if err != nil {
 			tx.Rollback()
 			// User auth failed, delete the cookies to avoid repeat requests

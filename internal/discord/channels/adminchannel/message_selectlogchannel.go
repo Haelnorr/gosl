@@ -12,13 +12,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+var selectLogChannel = &messages.ChannelMessage{
+	Label:        "Select Log Channel",
+	Purpose:      messages.AdminSelectLogChannel,
+	Channel:      channels.PurposeAdmin,
+	ContentsFunc: selectLogChannelContents,
+}
+
 // Get the message contents for the select log channel component
 func selectLogChannelContents(
 	ctx context.Context,
 	b *util.Bot,
 ) (util.MessageContents, error) {
 	b.Logger.Debug().Msg("Setting up select log channel components")
-	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 	tx, err := b.Conn.RBegin(timeout)
 	if err != nil {
@@ -69,7 +76,6 @@ func handleSelectLogChannelInteraction(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
-	thisChannel := i.ChannelID
 	selectedChannel := i.MessageComponentData().Values[0]
 	err := channels.SetPurpose(ctx, tx, selectedChannel, channels.PurposeLog)
 	if err != nil {
@@ -84,13 +90,7 @@ func handleSelectLogChannelInteraction(
 	// and runs as soon as the interaction is completed
 	go func() {
 		b.Logger.Debug().Msg("Updating log channel select")
-		err = messages.UpdateChannelMessage(
-			ctx,
-			b,
-			selectLogChannelContents,
-			messages.AdminSelectLogChannel,
-			thisChannel,
-		)
+		err = messages.UpdateChannelMessage(ctx, b, selectLogChannel)
 		if err != nil {
 			b.Logger.Warn().Err(err).
 				Msg("Failed to update select log channel message after interaction")

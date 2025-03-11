@@ -3,6 +3,7 @@ package managerchannel
 import (
 	"context"
 	"fmt"
+	"gosl/internal/discord/channels/channels"
 	"gosl/internal/discord/messages"
 	"gosl/internal/discord/util"
 	"gosl/internal/models"
@@ -13,13 +14,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+var activeSeasonInfo = &messages.ChannelMessage{
+	Label:        "Active Season Info",
+	Purpose:      messages.ManagerActiveSeason,
+	Channel:      channels.PurposeManager,
+	ContentsFunc: activeSeasonComponents,
+}
+
 // Get the message contents for the show active season component
 func activeSeasonComponents(
 	ctx context.Context,
 	b *util.Bot,
 ) (util.MessageContents, error) {
 	b.Logger.Debug().Msg("Setting up active season components")
-	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
 	tx, err := b.Conn.RBegin(timeout)
@@ -41,17 +49,20 @@ func activeSeasonComponents(
 		registrationButton.Label = "Close Registration"
 		registrationButton.Style = discordgo.DangerButton
 	}
+	components := []discordgo.MessageComponent{}
 
-	components := []discordgo.MessageComponent{
-		&discordgo.ActionsRow{
-			Components: []discordgo.MessageComponent{
-				registrationButton,
-				&discordgo.Button{
-					Label:    "Set dates",
-					CustomID: "set_dates_button",
+	if season.ID != "NOACTIVESEASON" {
+		components = []discordgo.MessageComponent{
+			&discordgo.ActionsRow{
+				Components: []discordgo.MessageComponent{
+					registrationButton,
+					&discordgo.Button{
+						Label:    "Set dates",
+						CustomID: "set_dates_button",
+					},
 				},
 			},
-		},
+		}
 	}
 	// options := []discordgo.SelectMenuOption{
 	// 	{
@@ -166,7 +177,6 @@ func handleSetSeasonDatesModalInteraction(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
-	thisChannel := i.ChannelID
 	startDate := i.ModalSubmitData().Components[0].(*discordgo.ActionsRow).
 		Components[0].(*discordgo.TextInput).Value
 	regEndDate := i.ModalSubmitData().Components[1].(*discordgo.ActionsRow).
@@ -194,13 +204,7 @@ Finals End: %s`
 	// and runs as soon as the interaction is completed
 	go func() {
 		b.Logger.Debug().Msg("Updating active season message")
-		err := messages.UpdateChannelMessage(
-			ctx,
-			b,
-			activeSeasonComponents,
-			messages.ManagerActiveSeason,
-			thisChannel,
-		)
+		err := messages.UpdateChannelMessage(ctx, b, activeSeasonInfo)
 		if err != nil {
 			msg := "Failed to update active season message after interaction"
 			b.Logger.Warn().Err(err).
@@ -218,7 +222,6 @@ func handleToggleRegistrationInteraction(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
-	thisChannel := i.ChannelID
 	b.Logger.Debug().Msg("Getting active season")
 	season, err := models.GetActiveSeason(ctx, tx)
 	if err != nil {
@@ -238,13 +241,7 @@ func handleToggleRegistrationInteraction(
 	// and runs as soon as the interaction is completed
 	go func() {
 		b.Logger.Debug().Msg("Updating active season message")
-		err := messages.UpdateChannelMessage(
-			ctx,
-			b,
-			activeSeasonComponents,
-			messages.ManagerActiveSeason,
-			thisChannel,
-		)
+		err := messages.UpdateChannelMessage(ctx, b, activeSeasonInfo)
 		if err != nil {
 			b.Logger.Warn().Err(err).
 				Msg("Failed to update active season message after interaction")

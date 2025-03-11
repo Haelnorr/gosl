@@ -15,6 +15,7 @@ const (
 	PurposeManager uint16 = 3 // Channel used for league manager panel
 )
 
+// Helper function to get the string name of a channel from the purpose
 func PurposeName(p uint16) string {
 	purpose := map[uint16]string{
 		PurposeAdmin:   "Admin channel",

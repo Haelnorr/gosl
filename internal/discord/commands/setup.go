@@ -51,13 +51,12 @@ func Setup(
 		b.Logger.Debug().Str("command", cmd.Name).Msg("Registering command")
 	}
 
-	b.Session.AddHandler(handleCommandInteractions(ctx, b.Logger, commands))
+	b.Session.AddHandler(handleCommandInteractions(b.Logger, commands))
 	b.Logger.Info().Msg("Finished registering commands")
 }
 
 // Handle the command interactions
 func handleCommandInteractions(
-	ctx context.Context,
 	logger *zerolog.Logger,
 	commands []*Command,
 ) util.Handler {

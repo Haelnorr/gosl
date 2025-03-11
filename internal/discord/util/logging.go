@@ -19,6 +19,29 @@ func (b *Bot) Log() *logmsg {
 	return &logmsg{b: b}
 }
 
+// Helper function to log an error with all three logging methods.
+// Logs to primary logger, log channel, and reponds to the interaction
+func (b *Bot) TripleError(
+	msg string,
+	err error,
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+) {
+	b.Logger.Error().Err(err).Msg(msg)
+	b.Error(msg, err.Error(), s, i)
+	b.Log().Error(msg, err)
+}
+
+// Helper function to log an error with the two main logging methods.
+// Logs to primary logger and the log channel
+func (b *Bot) DoubleError(
+	msg string,
+	err error,
+) {
+	b.Logger.Error().Err(err).Msg(msg)
+	b.Log().Error(msg, err)
+}
+
 // Send the logmsg as an error message
 func (l *logmsg) Error(msg string, err error) {
 	l.level = "Error"

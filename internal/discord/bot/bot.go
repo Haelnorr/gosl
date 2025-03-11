@@ -11,6 +11,7 @@ import (
 	"gosl/pkg/db"
 	"io/fs"
 	"sync"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
@@ -34,6 +35,7 @@ func NewBot(
 
 // Start the bot
 func Start(ctx context.Context, b *util.Bot) error {
+	starttime := time.Now()
 	err := b.Session.Open()
 	if err != nil {
 		return errors.Wrap(err, "b.session.Open")
@@ -83,7 +85,7 @@ func Start(ctx context.Context, b *util.Bot) error {
 		b.Log().Error("**Error(s) during bot startup**", err)
 		return errors.New("Error(s) during bot startup")
 	}
-	b.Logger.Info().Msg("Bot startup complete!")
+	b.Logger.Info().Dur("startup_time", time.Since(starttime)).Msg("Bot startup complete!")
 	b.Log().Info("Bot startup complete")
 	return nil
 }

@@ -16,22 +16,18 @@ func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
 	b.Logger.Debug().Msg("Adding handler for admin channel interactions")
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if i.Type == discordgo.InteractionMessageComponent {
-			timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+			timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
 			tx, err := b.Conn.Begin(timeout)
 			msg := "Failed to handle interaction in admin channel"
 			if err != nil {
-				b.Logger.Error().Err(err).Msg(msg)
-				b.Error(msg, err.Error(), s, i)
-				b.Log().Error(msg, err)
+				b.TripleError(msg, err, s, i)
 				return
 			}
 			defer tx.Rollback()
 			channelID, err := channels.GetChannel(ctx, tx, channels.PurposeAdmin)
 			if err != nil {
-				b.Logger.Error().Err(err).Msg(msg)
-				b.Error(msg, err.Error(), s, i)
-				b.Log().Error(msg, err)
+				b.TripleError(msg, err, s, i)
 				return
 			}
 			if i.Message.ChannelID != channelID {
@@ -41,8 +37,7 @@ func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
 			isAdmin, err := permissions.HasPermission(
 				ctx, tx, s, b.Config.DiscordGuildID, i.Member, permissions.Admin)
 			if !isAdmin {
-				msg := "You do not have permission for this action"
-				b.Error("Forbidden", msg, s, i)
+				b.Forbidden(s, i)
 				return
 			}
 
@@ -62,9 +57,7 @@ func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
 			}
 			if err != nil {
 				msg := "Failed to handle interaction in admin channel"
-				b.Logger.Error().Err(err).Msg(msg)
-				b.Error(msg, err.Error(), s, i)
-				b.Log().Error(msg, err)
+				b.TripleError(msg, err, s, i)
 				return
 			}
 			tx.Commit()
