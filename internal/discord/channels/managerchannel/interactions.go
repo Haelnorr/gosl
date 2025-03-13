@@ -63,6 +63,9 @@ func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
 			case "toggle_registration":
 				b.Logger.Debug().Msg("Handling toggle registration interaction")
 				err = handleToggleRegistrationInteraction(ctx, tx, b, s, i)
+			case "select_season_leagues":
+				b.Logger.Debug().Msg("Handling select leagues interaction")
+				err = handleSelectLeaguesInteraction(ctx, tx, b, s, i)
 			default:
 				err = errors.New("No handler for interaction")
 			}

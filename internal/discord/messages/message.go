@@ -1,7 +1,9 @@
 package messages
 
 import (
+	"fmt"
 	"gosl/internal/discord/util"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
@@ -33,6 +35,8 @@ func EditComplexMessage(
 	session *discordgo.Session,
 ) error {
 	msg, embed, components := contents()
+	starttime := time.Now()
+	fmt.Println("Starting timer")
 	_, err := session.ChannelMessageEditComplex(&discordgo.MessageEdit{
 		ID:         messageID,
 		Channel:    channelID,
@@ -40,6 +44,7 @@ func EditComplexMessage(
 		Embeds:     &[]*discordgo.MessageEmbed{embed},
 		Components: &components,
 	})
+	fmt.Printf("Time taken: %s\n", time.Since(starttime))
 	if err != nil {
 		return errors.Wrap(err, "session.ChannelMessageEditComplex")
 	}

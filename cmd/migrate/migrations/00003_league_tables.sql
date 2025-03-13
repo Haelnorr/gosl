@@ -9,17 +9,13 @@ CREATE TABLE IF NOT EXISTS season(
     active INTEGER NOT NULL DEFAULT 0,
     registration_open INTEGER NOT NULL DEFAULT 0
 ) STRICT;
-CREATE TRIGGER IF NOT EXISTS enforce_single_active_season
-BEFORE UPDATE ON season
-FOR EACH ROW
-WHEN NEW.active = 1
-BEGIN
-    UPDATE season SET active = 0 WHERE id != NEW.id;
-END;
+
 CREATE TABLE IF NOT EXISTS league(
     id INTEGER PRIMARY KEY,
     division TEXT NOT NULL,
-    season_id INTEGER,
+    season_id TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(division, season_id),
     FOREIGN KEY(season_id) REFERENCES season(id)
 ) STRICT;
 
@@ -102,6 +98,14 @@ CREATE TABLE IF NOT EXISTS free_agent_registration(
     FOREIGN KEY(player_id) REFERENCES player(id),
     FOREIGN KEY(season_id) REFERENCES season(id)
 ) STRICT;
+
+CREATE TRIGGER IF NOT EXISTS enforce_single_active_season
+BEFORE UPDATE ON season
+FOR EACH ROW WHEN NEW.active = 1
+BEGIN
+UPDATE season SET active = 0 WHERE id != NEW.id;
+END;
+
 -- +goose StatementEnd
 
 -- +goose Down

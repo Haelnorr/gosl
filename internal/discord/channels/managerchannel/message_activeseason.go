@@ -51,6 +51,10 @@ func activeSeasonComponents(
 	}
 	components := []discordgo.MessageComponent{}
 
+	leagues, err := models.GetLeagues(ctx, tx, season.ID)
+	if err != nil {
+		return nil, errors.Wrap(err, "models.GetLeagues")
+	}
 	if season.ID != "NOACTIVESEASON" {
 		components = []discordgo.MessageComponent{
 			&discordgo.ActionsRow{
@@ -63,52 +67,60 @@ func activeSeasonComponents(
 				},
 			},
 		}
+		options, err := getLeagueOptions(leagues)
+		if err != nil {
+			return nil, errors.Wrap(err, "getLeagueOptions")
+		}
+		leagueSelect := messages.StringSelect(
+			"select_season_leagues",
+			"Select Leagues",
+			options,
+			0,
+			3,
+		)
+		components = append(components, leagueSelect...)
 	}
-	// options := []discordgo.SelectMenuOption{
-	// 	{
-	// 		Label: "Open",
-	// 		Value: "open",
-	// 	},
-	// }
-	// leagueSelect := messages.StringSelect(
-	// 	"select_season_leagues",
-	// 	"Select Leagues",
-	// 	options,
-	// 	0,
-	// 	3,
-	// )
-	// components = append(components, leagueSelect...)
-
+	tx.Commit()
 	return func() (
 		string,
 		*discordgo.MessageEmbed,
 		[]discordgo.MessageComponent,
 	) {
 		b.Logger.Debug().Msg("Retrieving active season components")
-		return "",
+		embed :=
 			&discordgo.MessageEmbed{
 				Title: "Active Season",
 				Description: fmt.Sprintf(`
-**%s (%s)**
+                    **%s (%s)**
 
-**Registration:** %s
+                    **Registration:** %s
 
-Leagues:
+                    **Leagues:** %s
 
-Start Date: %s
-Regular Season End: %s
-Finals End: %s
+                    Start Date: %s
+                    Regular Season End: %s
+                    Finals End: %s
 
-Transfer windows:
-`,
+                    Transfer windows:
+                    `,
 					season.Name, season.ID, season.RegistrationStatusString(),
+					func() string {
+						msg := ""
+						for i, league := range *leagues {
+							msg = msg + league.Division
+							if i+1 < len(*leagues) {
+								msg = msg + ", "
+							}
+						}
+						return msg
+					}(),
 					util.DiscordDateUntil(season.Start),
 					util.DiscordDateUntil(season.RegSeasonEnd),
 					util.DiscordDateUntil(season.FinalsEnd),
 				),
 				Color: 0x00ff00, // Green color
-			},
-			components
+			}
+		return "", embed, components
 	}, nil
 }
 
@@ -249,4 +261,71 @@ func handleToggleRegistrationInteraction(
 		b.Logger.Debug().Msg("Updating active season info")
 	}()
 	return nil
+}
+
+func handleSelectLeaguesInteraction(
+	ctx context.Context,
+	tx *db.SafeWTX,
+	b *util.Bot,
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+) error {
+	b.Logger.Debug().Msg("Getting active season")
+	season, err := models.GetActiveSeason(ctx, tx)
+	if err != nil {
+		return errors.Wrap(err, "models.GetActiveSeason")
+	}
+	leagues := i.MessageComponentData().Values
+	err = models.SetLeagues(ctx, tx, season.ID, leagues)
+	if err != nil {
+		return errors.Wrap(err, "models.SetLeagues")
+	}
+
+	msg := "Leagues updated for %s:\n"
+	for _, league := range leagues {
+		msg = msg + " - " + league + "\n"
+	}
+	msg = fmt.Sprintf(msg, season.Name)
+	b.Log().UserEvent(i.Member, msg)
+	messages.ReplyEphemeral(msg, s, i, b.Logger)
+	// Spin off updating the message so it doesnt block/get blocked by the transaction
+	// and runs as soon as the interaction is completed
+	go func() {
+		b.Logger.Debug().Msg("Updating active season message")
+		err := messages.UpdateChannelMessage(ctx, b, activeSeasonInfo)
+		if err != nil {
+			b.Logger.Warn().Err(err).
+				Msg("Failed to update active season message after interaction")
+		}
+		b.Logger.Debug().Msg("Updating active season info")
+	}()
+	return nil
+}
+
+func getLeagueOptions(
+	leagues *[]models.League,
+) ([]discordgo.SelectMenuOption, error) {
+	allLeagues := map[string]*discordgo.SelectMenuOption{
+
+		"Open": {
+			Label: "Open",
+			Value: "Open",
+		},
+		"IM": {
+			Label: "Intermediate",
+			Value: "IM",
+		},
+		"Pro": {
+			Label: "Pro",
+			Value: "Pro",
+		},
+	}
+	options := []discordgo.SelectMenuOption{}
+	for _, league := range *leagues {
+		allLeagues[league.Division].Default = true
+	}
+	for _, option := range allLeagues {
+		options = append(options, *option)
+	}
+	return options, nil
 }

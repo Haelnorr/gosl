@@ -107,19 +107,16 @@ func handleSelectSeasonInteraction(
 	// Spin off updating the message so it doesnt block/get blocked by the transaction
 	// and runs as soon as the interaction is completed
 	go func() {
-		b.Logger.Debug().Msg("Updating season select")
-		err := messages.UpdateChannelMessage(ctx, b, selectSeason)
-		if err != nil {
-			b.Logger.Warn().Err(err).
-				Msg("Failed to update select active season message after interaction")
-		}
-		b.Logger.Debug().Msg("Updating active season info")
-		err = messages.UpdateChannelMessage(ctx, b, activeSeasonInfo)
-		if err != nil {
-			b.Logger.Warn().Err(err).
-				Msg("Failed to update active season message after interaction")
-		}
 		// TODO: update any other messages that display data from the active season
+		msgs := []*messages.ChannelMessage{
+			// selectSeason,
+			activeSeasonInfo,
+		}
+		errmsg := "Failed to update message after interaction"
+		msgerrors := messages.UpdateChannelMessages(ctx, b, msgs)
+		for _, err := range msgerrors {
+			b.Logger.Warn().Err(err).Msg(errmsg)
+		}
 	}()
 	return nil
 }

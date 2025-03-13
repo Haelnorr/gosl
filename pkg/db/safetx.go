@@ -21,6 +21,7 @@ type SafeWTX struct {
 	tx *sql.Tx
 	sc *SafeConn
 }
+
 type SafeRTX struct {
 	tx *sql.Tx
 	sc *SafeConn

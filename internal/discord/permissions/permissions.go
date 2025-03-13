@@ -53,7 +53,7 @@ SELECT 1 FROM config_roles WHERE
     permission = ? AND 
     role_id IN (` + strings.Repeat("?,", len(member.Roles)-1) + `? ) LIMIT 1;
 `
-	args := make([]interface{}, len(member.Roles)+1)
+	args := make([]any, len(member.Roles)+1)
 	args[0] = permid
 	for i, roleID := range member.Roles {
 		args[i+1] = roleID
@@ -102,9 +102,9 @@ func SetRoles(
 	roles []string,
 	permid uint16,
 ) error {
-	args := make([]interface{}, 0, len(roles)+1)
+	args := make([]any, 0, len(roles)+1)
 	query := `DELETE FROM config_roles WHERE permission = ?`
-	args = []interface{}{permid}
+	args = []any{permid}
 	if len(roles) != 0 {
 		query = `
         DELETE FROM config_roles WHERE permission = ?

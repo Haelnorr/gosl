@@ -195,12 +195,13 @@ func addOrEditChannelMessage(
 	b *util.Bot,
 	message *ChannelMessage,
 ) error {
-	b.Logger.Debug().Str("message", message.Label).Msg("Updating message")
+	b.Logger.Debug().Str("message", message.Label).Msg("Setting up message")
 	// get the message components
 	contents, err := message.ContentsFunc(ctx, b)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("message.ContentsFunc (%s)", message.Label))
 	}
+	b.Logger.Debug().Str("message", message.Label).Msg("Updating message")
 	// attempt to edit an existing message
 	err = editChannelMessage(ctx, b, message, contents)
 	if !(err != nil && err.Error() == "No message found") {
