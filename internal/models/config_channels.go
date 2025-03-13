@@ -1,39 +1,28 @@
-package channels
+package models
 
 import (
 	"context"
 	"database/sql"
 	"gosl/pkg/db"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
 )
 
 const (
-	PurposeAdmin   uint16 = 1 // Channel used for admin panel
-	PurposeLog     uint16 = 2 // Channel used for logging
-	PurposeManager uint16 = 3 // Channel used for league manager panel
+	ChannelAdmin   uint16 = 1 // Channel used for admin panel
+	ChannelLog     uint16 = 2 // Channel used for logging
+	ChannelManager uint16 = 3 // Channel used for league manager panel
 )
 
-// Helper function to get the string name of a channel from the purpose
-func PurposeName(p uint16) string {
-	purpose := map[uint16]string{
-		PurposeAdmin:   "Admin channel",
-		PurposeLog:     "Log channel",
-		PurposeManager: "League manager channel",
-	}
-	return purpose[p]
-}
-
 // Add a channel to the database with the provided purpose
-func AddPurpose(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
+func AddChannel(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
 	query := `INSERT INTO config_channels (channel_id, purpose) VALUES (?, ?) ON CONFLICT DO NOTHING;`
 	_, err := tx.Exec(ctx, query, channelID, purpose)
 	return err
 }
 
 // Set a channel in the database as the only channel with the provided purpose
-func SetPurpose(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
+func SetChannel(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
 	var count int
 	query := `SELECT COUNT(*) FROM config_channels WHERE purpose = ?;`
 	row, err := tx.QueryRow(ctx, query, purpose)
@@ -61,7 +50,7 @@ func SetPurpose(ctx context.Context, tx *db.SafeWTX, channelID string, purpose u
 }
 
 // Remove a channel from the database with the provided purpose
-func RemovePurpose(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
+func RemoveChannel(ctx context.Context, tx *db.SafeWTX, channelID string, purpose uint16) error {
 	query := `DELETE FROM config_channels WHERE channel_id = ? AND purpose = ?;`
 	_, err := tx.Exec(ctx, query, channelID, purpose)
 	return err
@@ -116,13 +105,4 @@ func GetChannels(
 	}
 
 	return channelIDs, nil
-}
-
-// Check with the discord API if the channel exists
-func CheckExists(channelID string, s *discordgo.Session) bool {
-	if channelID == "" {
-		return false
-	}
-	_, err := s.Channel(channelID)
-	return err == nil
 }

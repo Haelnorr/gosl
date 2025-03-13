@@ -2,8 +2,7 @@ package commands
 
 import (
 	"encoding/json"
-	"gosl/internal/discord/messages"
-	"gosl/internal/discord/util"
+	"gosl/internal/discord/bot"
 	"gosl/internal/gamelogs"
 	"io"
 	"net/http"
@@ -11,7 +10,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func cmdUploadLogs(b *util.Bot) *Command {
+func cmdUploadLogs(b *bot.Bot) *Command {
 	return &Command{
 		Name:        "uploadlogs",
 		Description: "Upload match logs",
@@ -40,8 +39,8 @@ func cmdUploadLogs(b *util.Bot) *Command {
 }
 
 func handleUploadLogs(
-	b *util.Bot,
-) util.Handler {
+	b *bot.Bot,
+) bot.Handler {
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// TODO: check user has permission to upload logs
 
@@ -83,7 +82,7 @@ func handleUploadLogs(
 
 		// TODO: actually do something with the log data
 
-		err := messages.ReplyEphemeral("Log files uploaded", s, i, b.Logger)
+		err := bot.ReplyEphemeral("Log files uploaded", s, i, b.Logger)
 		if err != nil {
 			b.Logger.Error().Err(err).Msg("Failed to reply to interaction")
 		}

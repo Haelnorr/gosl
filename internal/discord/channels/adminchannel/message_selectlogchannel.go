@@ -2,9 +2,9 @@ package adminchannel
 
 import (
 	"context"
-	"gosl/internal/discord/channels/channels"
-	"gosl/internal/discord/messages"
-	"gosl/internal/discord/util"
+	"gosl/internal/discord/bot"
+	"gosl/internal/discord/components"
+	"gosl/internal/models"
 	"gosl/pkg/db"
 	"time"
 
@@ -12,18 +12,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-var selectLogChannel = &messages.ChannelMessage{
-	Label:        "Select Log Channel",
-	Purpose:      messages.AdminSelectLogChannel,
-	Channel:      channels.PurposeAdmin,
-	ContentsFunc: selectLogChannelContents,
+var selectLogChannel = &bot.Message{
+	Label:       "Select Log Channel",
+	Purpose:     models.MsgSelectLogChannel,
+	GetContents: selectLogChannelContents,
 }
 
 // Get the message contents for the select log channel component
 func selectLogChannelContents(
 	ctx context.Context,
-	b *util.Bot,
-) (util.MessageContents, error) {
+	b *bot.Bot,
+) (bot.MessageContents, error) {
 	b.Logger.Debug().Msg("Setting up select log channel components")
 	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -33,18 +32,16 @@ func selectLogChannelContents(
 	}
 	defer tx.Rollback()
 	b.Logger.Debug().Msg("Getting default values for select log channel components")
-	logChannelID, err := channels.GetChannel(ctx, tx, channels.PurposeLog)
+	logChannelID, err := models.GetChannel(ctx, tx, models.ChannelLog)
 	if err != nil {
 		return nil, errors.Wrap(err, "getChannelForPurpose")
 	}
 	tx.Commit()
 	var defaultValues []discordgo.SelectMenuDefaultValue
-	if channels.CheckExists(logChannelID, b.Session) {
-		defaultValues = append(defaultValues, discordgo.SelectMenuDefaultValue{
-			ID:   logChannelID,
-			Type: discordgo.SelectMenuDefaultValueChannel,
-		})
-	}
+	defaultValues = append(defaultValues, discordgo.SelectMenuDefaultValue{
+		ID:   logChannelID,
+		Type: discordgo.SelectMenuDefaultValueChannel,
+	})
 	return func() (
 		string,
 		*discordgo.MessageEmbed,
@@ -57,7 +54,7 @@ func selectLogChannelContents(
 				Description: `Select the channel to output bot logs to`,
 				Color:       0x00ff00, // Green color
 			},
-			messages.ChannelSelect(
+			components.ChannelSelect(
 				"log_channel_select",
 				"Select the channel for log output",
 				defaultValues,
@@ -72,29 +69,31 @@ func selectLogChannelContents(
 func handleSelectLogChannelInteraction(
 	ctx context.Context,
 	tx *db.SafeWTX,
-	b *util.Bot,
+	b *bot.Bot,
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
 	selectedChannel := i.MessageComponentData().Values[0]
-	err := channels.SetPurpose(ctx, tx, selectedChannel, channels.PurposeLog)
+	err := models.SetChannel(ctx, tx, selectedChannel, models.ChannelLog)
 	if err != nil {
 		return errors.Wrap(err, "setChannelPurpose (log channel)")
 	}
-	b.Logchannel = selectedChannel
+	b.Channels[models.ChannelLog].ID = selectedChannel
 	channel := i.MessageComponentData().Resolved.Channels[selectedChannel]
 	msg := "Log channel updated to: " + channel.Name
 	b.Log().UserEvent(i.Member, msg)
-	messages.ReplyEphemeral("Updated log channel to "+channel.Name, s, i, b.Logger)
+	bot.ReplyEphemeral("Updated log channel to "+channel.Name, s, i, b.Logger)
 	// Spin off updating the message so it doesnt block/get blocked by the transaction
 	// and runs as soon as the interaction is completed
 	go func() {
 		b.Logger.Debug().Msg("Updating log channel select")
-		err = messages.UpdateChannelMessage(ctx, b, selectLogChannel)
-		if err != nil {
+		errch := make(chan error)
+		b.Channels[models.ChannelAdmin].Messages[models.MsgSelectLogChannel].Update(ctx, errch)
+		if <-errch != nil {
 			b.Logger.Warn().Err(err).
 				Msg("Failed to update select log channel message after interaction")
 		}
+		close(errch)
 	}()
 	return nil
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"gosl/internal/discord/util"
 	"gosl/pkg/db"
 	"strings"
 	"time"
@@ -213,7 +212,6 @@ func (s *Season) SetDates(
 	} else {
 		startTime = parseTextDate(startStr)
 		if startTime != nil {
-			startTime = util.TimeInLocale(startTime, locale)
 			timeStr := formatISO8601(startTime)
 			newq := fmt.Sprintf(
 				`UPDATE season SET start = "%s" WHERE id = "%s";`,
@@ -228,7 +226,7 @@ func (s *Season) SetDates(
 	} else {
 		endTime = parseTextDate(endStr)
 		if endTime != nil {
-			endTime = util.TimeInLocale(endTime, locale)
+			endTime = TimeInLocale(endTime, locale)
 			timeStr := formatISO8601(endTime)
 			newq := fmt.Sprintf(
 				`UPDATE season SET reg_season_end = "%s" WHERE id = "%s";`,
@@ -243,7 +241,7 @@ func (s *Season) SetDates(
 	} else {
 		finalsEndTime = parseTextDate(finalsStr)
 		if finalsEndTime != nil {
-			finalsEndTime = util.TimeInLocale(finalsEndTime, locale)
+			finalsEndTime = TimeInLocale(finalsEndTime, locale)
 			timeStr := formatISO8601(finalsEndTime)
 			newq := fmt.Sprintf(
 				`UPDATE season SET finals_end = "%s" WHERE id = "%s";`,

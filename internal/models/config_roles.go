@@ -1,4 +1,4 @@
-package permissions
+package models
 
 import (
 	"context"
@@ -11,12 +11,12 @@ import (
 )
 
 const (
-	Admin         uint16 = 1 // Admin permission
-	LeagueManager uint16 = 2 // League Manager permission
+	PermAdmin         uint16 = 1 // Admin permission
+	PermLeagueManager uint16 = 2 // League Manager permission
 )
 
 // Add a permission to the provided role
-func Add(ctx context.Context, tx *db.SafeWTX, roleid string, perm uint16) error {
+func AddPermission(ctx context.Context, tx *db.SafeWTX, roleid string, perm uint16) error {
 	query := `
 INSERT INTO config_roles (role_id, permission) 
 VALUES (?, ?) ON CONFLICT DO NOTHING;
@@ -33,7 +33,7 @@ DELETE FROM config_roles WHERE role_id = ? AND permission = ?;
 }
 
 // Check if the provided role has the provided permission
-func HasPermission(
+func MemberHasPermission(
 	ctx context.Context,
 	tx db.SafeTX,
 	s *discordgo.Session,
@@ -112,7 +112,7 @@ func SetRoles(
         `
 		for _, role := range roles {
 			args = append(args, role)
-			err := Add(ctx, tx, role, permid)
+			err := AddPermission(ctx, tx, role, permid)
 			if err != nil {
 				return errors.Wrap(err, "addPermission")
 			}

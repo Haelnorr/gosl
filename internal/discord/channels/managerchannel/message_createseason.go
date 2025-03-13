@@ -2,9 +2,7 @@ package managerchannel
 
 import (
 	"context"
-	"gosl/internal/discord/channels/channels"
-	"gosl/internal/discord/messages"
-	"gosl/internal/discord/util"
+	"gosl/internal/discord/bot"
 	"gosl/internal/models"
 	"gosl/pkg/db"
 	"strings"
@@ -13,18 +11,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-var createSeason = &messages.ChannelMessage{
-	Label:        "Create Season",
-	Purpose:      messages.ManagerCreateSeason,
-	Channel:      channels.PurposeManager,
-	ContentsFunc: createSeasonComponents,
+var createSeason = &bot.Message{
+	Label:       "Create Season",
+	Purpose:     models.MsgCreateSeason,
+	GetContents: createSeasonComponents,
 }
 
 // Get the message contents for the create season component
 func createSeasonComponents(
 	ctx context.Context,
-	b *util.Bot,
-) (util.MessageContents, error) {
+	b *bot.Bot,
+) (bot.MessageContents, error) {
 	components := []discordgo.MessageComponent{
 		&discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
@@ -81,7 +78,7 @@ func handleCreateSeasonButtonInteraction(
 			},
 		},
 	}
-	err := messages.ReplyModal("Create Season", "create_season_modal", components, s, i)
+	err := bot.ReplyModal("Create Season", "create_season_modal", components, s, i)
 	if err != nil {
 		return errors.Wrap(err, "messages.ReplyModal")
 	}
@@ -91,7 +88,7 @@ func handleCreateSeasonButtonInteraction(
 func handleCreateSeasonModalInteraction(
 	ctx context.Context,
 	tx *db.SafeWTX,
-	b *util.Bot,
+	b *bot.Bot,
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
@@ -110,19 +107,21 @@ func handleCreateSeasonModalInteraction(
 	}
 	msg := "New Season created: " + season.Name
 	b.Log().UserEvent(i.Member, msg)
-	messages.ReplyEphemeral(msg, s, i, b.Logger)
+	bot.ReplyEphemeral(msg, s, i, b.Logger)
 
 	// Spin off updating the message so it doesnt block/get blocked by the transaction
 	// and runs as soon as the interaction is completed
 	go func() {
 		b.Logger.Debug().Msg("Updating season select")
-		err := messages.UpdateChannelMessage(ctx, b, selectSeason)
-		if err != nil {
+		errch := make(chan error)
+		b.Channels[models.ChannelManager].Messages[models.MsgSelectSeason].Update(ctx, errch)
+		if <-errch != nil {
 			msg := "Failed to update select season message after interaction"
 			b.Logger.Warn().Err(err).
 				Msg(msg)
 			b.Log().Error(msg, err)
 		}
+		close(errch)
 	}()
 	return nil
 }

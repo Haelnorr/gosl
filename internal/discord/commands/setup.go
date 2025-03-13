@@ -2,7 +2,7 @@ package commands
 
 import (
 	"context"
-	"gosl/internal/discord/util"
+	"gosl/internal/discord/bot"
 	"sync"
 
 	"github.com/bwmarrin/discordgo"
@@ -13,12 +13,12 @@ import (
 type Command struct {
 	Name        string
 	Description string
-	Handler     util.Handler
+	Handler     bot.Handler
 	Options     []*discordgo.ApplicationCommandOption
 }
 
 // Get all the commands registered
-func getCommands(b *util.Bot) []*Command {
+func getCommands(b *bot.Bot) []*Command {
 	return []*Command{
 		cmdUploadLogs(b),
 	}
@@ -29,7 +29,7 @@ func Setup(
 	wg *sync.WaitGroup,
 	errch chan error,
 	ctx context.Context,
-	b *util.Bot,
+	b *bot.Bot,
 ) {
 	defer wg.Done()
 	commands := getCommands(b)
@@ -59,7 +59,7 @@ func Setup(
 func handleCommandInteractions(
 	logger *zerolog.Logger,
 	commands []*Command,
-) util.Handler {
+) bot.Handler {
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if i.Type == discordgo.InteractionApplicationCommand {
 			for _, cmd := range commands {

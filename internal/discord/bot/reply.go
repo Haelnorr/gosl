@@ -1,4 +1,4 @@
-package messages
+package bot
 
 import (
 	"time"

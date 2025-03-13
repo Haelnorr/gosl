@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"gosl/internal/discord/bot"
+	"gosl/internal/discord/startup"
 	"gosl/internal/httpserver"
 	"gosl/pkg/config"
 	"gosl/pkg/embedfs"
@@ -95,10 +96,10 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 
 	// Initialize the discord bot
 	discordBot, err := bot.NewBot(
-		config,
-		conn,
 		logger,
 		&staticFS,
+		conn,
+		config,
 	)
 	if err != nil {
 		return errors.Wrap(err, "bot.NewBot")
@@ -116,7 +117,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 	// Runs the discord bot
 	go func() {
 		logger.Info().Msg("Starting discord bot")
-		if err := bot.Start(ctx, discordBot); err != nil {
+		if err := startup.Start(ctx, discordBot); err != nil {
 			logger.Error().Err(err).Msg("Error running bot")
 		}
 	}()
@@ -138,7 +139,7 @@ func run(ctx context.Context, w io.Writer, args map[string]string) error {
 		defer wg.Done()
 		<-ctx.Done()
 		defer cancel()
-		if err := bot.Stop(discordBot); err != nil {
+		if err := startup.Stop(discordBot); err != nil {
 			logger.Error().Err(err).Msg("Error shutting down discord bot")
 		}
 	}()

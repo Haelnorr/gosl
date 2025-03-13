@@ -1,7 +1,8 @@
-package util
+package bot
 
 import (
 	"fmt"
+	"gosl/internal/models"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -47,7 +48,7 @@ func (l *logmsg) Error(msg string, err error) {
 	l.level = "Error"
 	l.message = msg + "\n" + err.Error()
 	l.color = 0xff0000
-	createComplexMessage(l.logMsgContents(), l.b.Logchannel, l.b.Session)
+	l.b.Channels[models.ChannelLog].SendMessage(l.logMsgContents())
 }
 
 // Send the logmsg as a user event
@@ -61,7 +62,7 @@ func (l *logmsg) UserEvent(user *discordgo.Member, msg string) {
 `
 	l.message = fmt.Sprintf(evtmsg, user.User.Username, msg)
 	l.color = 0x0096FF
-	createComplexMessage(l.logMsgContents(), l.b.Logchannel, l.b.Session)
+	l.b.Channels[models.ChannelLog].SendMessage(l.logMsgContents())
 }
 
 // Send the logmsg as an info event
@@ -69,7 +70,7 @@ func (l *logmsg) Info(msg string) {
 	l.level = "Info"
 	l.message = msg
 	l.color = 0x00ff00
-	createComplexMessage(l.logMsgContents(), l.b.Logchannel, l.b.Session)
+	l.b.Channels[models.ChannelLog].SendMessage(l.logMsgContents())
 }
 
 func (l *logmsg) logMsgContents() MessageContents {

@@ -2,10 +2,9 @@ package adminchannel
 
 import (
 	"context"
-	"gosl/internal/discord/channels/channels"
-	"gosl/internal/discord/messages"
-	"gosl/internal/discord/permissions"
-	"gosl/internal/discord/util"
+	"gosl/internal/discord/bot"
+	"gosl/internal/discord/components"
+	"gosl/internal/models"
 	"gosl/pkg/db"
 	"time"
 
@@ -13,18 +12,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-var selectAdminRoles = &messages.ChannelMessage{
-	Label:        "Select Admin Roles",
-	Purpose:      messages.AdminSelectAdminRoles,
-	Channel:      channels.PurposeAdmin,
-	ContentsFunc: selectAdminRolesContents,
+var selectAdminRoles = &bot.Message{
+	Label:       "Select Admin Roles",
+	Purpose:     models.MsgSelectAdminRoles,
+	GetContents: selectAdminRolesContents,
 }
 
 // Get the message contents for the select admin roles component
 func selectAdminRolesContents(
 	ctx context.Context,
-	b *util.Bot,
-) (util.MessageContents, error) {
+	b *bot.Bot,
+) (bot.MessageContents, error) {
 	b.Logger.Debug().Msg("Setting up select admin roles components")
 	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -34,7 +32,7 @@ func selectAdminRolesContents(
 	}
 	defer tx.Rollback()
 	b.Logger.Debug().Msg("Getting default values for select admin roles components")
-	roles, err := permissions.GetRoles(ctx, tx, permissions.Admin)
+	roles, err := models.GetRoles(ctx, tx, models.PermAdmin)
 	if err != nil {
 		return nil, errors.Wrap(err, "getRolesWithPermission")
 	}
@@ -64,7 +62,7 @@ Users with the discord Administrator permission
 will have access regardless of the roles set here.`,
 				Color: 0x00ff00, // Green color
 			},
-			messages.RoleSelect(
+			components.RoleSelect(
 				"admin_role_select",
 				"Select admin roles",
 				defaultValues,
@@ -78,12 +76,13 @@ will have access regardless of the roles set here.`,
 func handleSelectAdminRolesInteraction(
 	ctx context.Context,
 	tx *db.SafeWTX,
-	b *util.Bot,
+	b *bot.Bot,
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
+
 	roles := i.MessageComponentData().Values
-	err := permissions.SetRoles(ctx, tx, roles, permissions.Admin)
+	err := models.SetRoles(ctx, tx, roles, models.PermAdmin)
 	if err != nil {
 		return errors.Wrap(err, "setRolesForPermission (admin)")
 	}
@@ -93,15 +92,17 @@ func handleSelectAdminRolesInteraction(
 		msg = msg + " - " + droles[role].Name + "\n"
 	}
 	b.Log().UserEvent(i.Member, msg)
-	messages.ReplyEphemeral(msg, s, i, b.Logger)
+	bot.ReplyEphemeral(msg, s, i, b.Logger)
 	// Spin off updating the message so it doesnt block/get blocked by the transaction
 	// and runs as soon as the interaction is completed
 	go func() {
+		errch := make(chan error)
 		b.Logger.Debug().Msg("Updating admin roles select")
-		err = messages.UpdateChannelMessage(ctx, b, selectAdminRoles)
-		if err != nil {
+		b.Channels[models.ChannelAdmin].Messages[models.MsgSelectAdminRoles].
+			Update(ctx, errch)
+		if <-errch != nil {
 			b.Logger.Warn().Err(err).
-				Msg("Failed to update select log channel message after interaction")
+				Msg("Failed to update select admin roles message after interaction")
 		}
 	}()
 	return nil

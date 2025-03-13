@@ -1,19 +1,13 @@
-package util
+package bot
 
 import (
 	"fmt"
 	"time"
 )
 
-// Set the timezone for the time to the configured locale
-// Preserves the time of day. E.g. if the time provided has timestamp at midnight
-// the returned time will be at midnight in the specified locale
-func TimeInLocale(t *time.Time, locale string) *time.Time {
-	loc, _ := time.LoadLocation(locale)
-	dateInTZ := t.In(loc)
-	return &dateInTZ
-}
-
+// Format the time as a discord time stamp with type F (Full Date & Time)
+//
+// Friday, March 14, 2025 7:35 PM
 func DiscordDateTime(t *time.Time) string {
 	if t == nil {
 		return "Not set"
@@ -22,6 +16,10 @@ func DiscordDateTime(t *time.Time) string {
 	str := "<t:%v:F>"
 	return fmt.Sprintf(str, unix)
 }
+
+// Format the time as a discord time stamp with type D (Date)
+//
+// March 14, 2025
 func DiscordDate(t *time.Time) string {
 	if t == nil {
 		return "Not set"
@@ -30,6 +28,10 @@ func DiscordDate(t *time.Time) string {
 	str := "<t:%v:D>"
 	return fmt.Sprintf(str, unix)
 }
+
+// Format the time as a discord time stamp with type t (Time)
+//
+// 7:35 PM
 func DiscordTime(t *time.Time) string {
 	if t == nil {
 		return "Not set"
@@ -38,6 +40,10 @@ func DiscordTime(t *time.Time) string {
 	str := "<t:%v:t>"
 	return fmt.Sprintf(str, unix)
 }
+
+// Format the time as a discord time stamp with type R (time until)
+//
+// in 7 days
 func DiscordUntil(t *time.Time) string {
 	if t == nil {
 		return "Not set"
@@ -46,6 +52,11 @@ func DiscordUntil(t *time.Time) string {
 	str := "<t:%v:R>"
 	return fmt.Sprintf(str, unix)
 }
+
+// Format the time as a discord time stamp with type F and type R
+// (Full Date & Time and time until)
+//
+// Friday, March 14, 2025 7:35 PM (in 7 days)
 func DiscordDateTimeUntil(t *time.Time) string {
 	if t == nil {
 		return "Not set"
@@ -54,6 +65,10 @@ func DiscordDateTimeUntil(t *time.Time) string {
 	until := DiscordUntil(t)
 	return fmt.Sprintf("%s (%s)", datetime, until)
 }
+
+// Format the time as a discord time stamp with type D and type R (Date and time until)
+//
+// March 14, 2025 (in 7 days)
 func DiscordDateUntil(t *time.Time) string {
 	if t == nil {
 		return "Not set"
@@ -62,6 +77,10 @@ func DiscordDateUntil(t *time.Time) string {
 	until := DiscordUntil(t)
 	return fmt.Sprintf("%s (%s)", date, until)
 }
+
+// Format the time as a discord time stamp with type t and type R (Time and time until)
+//
+// 7:35 PM
 func DiscordTimeUntil(t *time.Time) string {
 	if t == nil {
 		return "Not set"

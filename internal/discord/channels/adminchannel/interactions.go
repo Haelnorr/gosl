@@ -2,9 +2,8 @@ package adminchannel
 
 import (
 	"context"
-	"gosl/internal/discord/channels/channels"
-	"gosl/internal/discord/permissions"
-	"gosl/internal/discord/util"
+	"gosl/internal/discord/bot"
+	"gosl/internal/models"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -12,7 +11,7 @@ import (
 )
 
 // Handle the interactions for the admin channel components
-func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
+func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 	b.Logger.Debug().Msg("Adding handler for admin channel interactions")
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if i.Type == discordgo.InteractionMessageComponent {
@@ -25,7 +24,7 @@ func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
 				return
 			}
 			defer tx.Rollback()
-			channelID, err := channels.GetChannel(ctx, tx, channels.PurposeAdmin)
+			channelID, err := models.GetChannel(ctx, tx, models.ChannelAdmin)
 			if err != nil {
 				b.TripleError(msg, err, s, i)
 				return
@@ -34,8 +33,8 @@ func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
 				return
 			}
 			b.Logger.Debug().Msg("Handling admin channel interaction")
-			isAdmin, err := permissions.HasPermission(
-				ctx, tx, s, b.Config.DiscordGuildID, i.Member, permissions.Admin)
+			isAdmin, err := models.MemberHasPermission(
+				ctx, tx, s, b.Config.DiscordGuildID, i.Member, models.PermAdmin)
 			if !isAdmin {
 				b.Forbidden(s, i)
 				return

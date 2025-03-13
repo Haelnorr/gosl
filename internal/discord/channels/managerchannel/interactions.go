@@ -2,16 +2,15 @@ package managerchannel
 
 import (
 	"context"
-	"gosl/internal/discord/channels/channels"
-	"gosl/internal/discord/permissions"
-	"gosl/internal/discord/util"
+	"gosl/internal/discord/bot"
+	"gosl/internal/models"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
 )
 
-func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
+func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 	b.Logger.Debug().Msg("Adding handler for manager channel interactions")
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// setup the database transaction
@@ -26,7 +25,7 @@ func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
 		defer tx.Rollback()
 
 		// Make sure interaction happened from manager channel
-		channelID, err := channels.GetChannel(ctx, tx, channels.PurposeManager)
+		channelID, err := models.GetChannel(ctx, tx, models.ChannelManager)
 		if err != nil {
 			b.TripleError(msg, err, s, i)
 			return
@@ -37,8 +36,8 @@ func handleInteractions(ctx context.Context, b *util.Bot) util.Handler {
 		b.Logger.Debug().Msg("Handling manager channel interaction")
 
 		// Check the user has permissions to do league manager things
-		isLeagueManager, err := permissions.HasPermission(
-			ctx, tx, s, b.Config.DiscordGuildID, i.Member, permissions.LeagueManager)
+		isLeagueManager, err := models.MemberHasPermission(
+			ctx, tx, s, b.Config.DiscordGuildID, i.Member, models.PermLeagueManager)
 		if !isLeagueManager {
 			b.Forbidden(s, i)
 			return

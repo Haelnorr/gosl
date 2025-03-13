@@ -4,6 +4,15 @@ import (
 	"time"
 )
 
+// Set the timezone for the time to the configured locale
+// Preserves the time of day. E.g. if the time provided has timestamp at midnight
+// the returned time will be at midnight in the specified locale
+func TimeInLocale(t *time.Time, locale string) *time.Time {
+	loc, _ := time.LoadLocation(locale)
+	dateInTZ := t.In(loc)
+	return &dateInTZ
+}
+
 func parseISO8601(isostr *string) *time.Time {
 	if isostr == nil {
 		return nil
