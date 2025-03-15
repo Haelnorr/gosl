@@ -2,7 +2,6 @@ package models
 
 import (
 	"context"
-	"fmt"
 	"gosl/pkg/db"
 
 	"github.com/pkg/errors"
@@ -22,7 +21,6 @@ func AddLeague(
 	seasonID string,
 	division string,
 ) error {
-	fmt.Println(division)
 	if division != "Open" && division != "IM" && division != "Pro" {
 		return errors.New("Invalid division, must be 'Open', 'IM', or 'Pro'")
 	}
@@ -68,7 +66,6 @@ func RemoveLeague(
 	seasonID string,
 	division string,
 ) error {
-	fmt.Println(division)
 	if division != "Open" && division != "IM" && division != "Pro" {
 		return errors.New("Invalid division, must be 'Open', 'IM', or 'Pro'")
 	}
@@ -92,7 +89,6 @@ func SetLeagues(
 		"Pro":  false,
 	}
 	for _, division := range divisions {
-		fmt.Println(division)
 		if division != "Open" && division != "IM" && division != "Pro" {
 			return errors.New("Invalid division, must be 'Open', 'IM', or 'Pro'")
 		}
