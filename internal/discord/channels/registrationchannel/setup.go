@@ -1,4 +1,4 @@
-package adminchannel
+package registrationchannel
 
 import (
 	"context"
@@ -18,9 +18,8 @@ func Setup(
 ) {
 	defer wg.Done()
 	channel := &bot.Channel{
-		Purpose: models.ChannelAdmin,
-		Name:    "gosl-bot-admin",
-		Label:   "Admin channel",
+		Purpose: models.ChannelRegistration,
+		Label:   "Registration channel",
 		Handler: handleInteractions(ctx, b),
 	}
 	err := b.AddChannel(channel)
@@ -28,7 +27,7 @@ func Setup(
 		errch <- errors.Wrap(err, "b.AddChannel")
 		return
 	}
-	err = channel.Setup(ctx, true)
+	err = channel.Setup(ctx, false)
 	if err != nil {
 		errch <- errors.Wrap(err, "channel.Setup")
 		return
@@ -36,10 +35,7 @@ func Setup(
 
 	// register all the messages
 	var errs []error
-	errs = append(errs, channel.RegisterMessage(selectLogChannel))
-	errs = append(errs, channel.RegisterMessage(selectAdminRoles))
 	errs = append(errs, channel.RegisterMessage(selectManagerRoles))
-	errs = append(errs, channel.RegisterMessage(selectRegistrationChannel))
 
 	// check for any errors setting up messages and return if any occured
 	hadErr := false

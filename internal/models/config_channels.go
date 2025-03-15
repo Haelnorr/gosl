@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	ChannelAdmin   uint16 = 1 // Channel used for admin panel
-	ChannelLog     uint16 = 2 // Channel used for logging
-	ChannelManager uint16 = 3 // Channel used for league manager panel
+	ChannelAdmin        uint16 = 1 // Channel used for admin panel
+	ChannelLog          uint16 = 2 // Channel used for logging
+	ChannelManager      uint16 = 3 // Channel used for league manager panel
+	ChannelRegistration uint16 = 4 // Channel used for player and team registrations
 )
 
 // Add a channel to the database with the provided purpose

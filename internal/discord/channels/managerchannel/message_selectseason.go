@@ -90,13 +90,12 @@ func handleSelectSeasonInteraction(
 	ctx context.Context,
 	tx *db.SafeWTX,
 	b *bot.Bot,
-	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
 	msgSelectSeason := b.Channels[models.ChannelManager].Messages[models.MsgSelectSeason]
 	msgActiveSeason := b.Channels[models.ChannelManager].Messages[models.MsgActiveSeason]
 	if !msgSelectSeason.StartUpdate(false) || !msgActiveSeason.StartUpdate(false) {
-		b.Error("Slow down!", "An update is in progress, please try again", s, i)
+		b.Error("Slow down!", "An update is in progress, please try again", i)
 		return nil
 	}
 	season := i.MessageComponentData().Values[0]
@@ -107,7 +106,7 @@ func handleSelectSeasonInteraction(
 
 	msg := "Active season set to: " + season
 	b.Log().UserEvent(i.Member, msg)
-	bot.ReplyEphemeral(msg, s, i, b.Logger)
+	b.Reply(msg, i)
 	// Spin off updating the message so it doesnt block/get blocked by the transaction
 	// and runs as soon as the interaction is completed
 	go func() {

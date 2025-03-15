@@ -28,7 +28,7 @@ func Setup(
 		errch <- errors.Wrap(err, "b.AddChannel")
 		return
 	}
-	err = channel.Setup(ctx)
+	err = channel.Setup(ctx, true)
 	if err != nil {
 		errch <- errors.Wrap(err, "channel.Setup")
 		return
@@ -51,5 +51,7 @@ func Setup(
 	if hadErr {
 		return
 	}
-	channel.SetupMessages(ctx, errch)
+	var mwg sync.WaitGroup
+	mwg.Add(1)
+	channel.SetupMessages(ctx, &mwg, errch)
 }

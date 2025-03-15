@@ -56,7 +56,7 @@ func (m *Message) Setup(ctx context.Context, wg *sync.WaitGroup, errch chan erro
 			m.ID = messageID
 		}
 	}
-	m.updateLock = false
+	m.updateLock = true
 	errch <- nil
 }
 
@@ -82,7 +82,10 @@ func (m *Message) EndUpdate() {
 
 // Updates (edits) the message with the discord API. Fails if message ID not found
 func (m *Message) Update(ctx context.Context, errch chan error) {
-	m.StartUpdate(true)
+	if !m.updateLock {
+		errch <- errors.New("Message update was not started")
+		return
+	}
 	// Get the time 500ms from now
 	// Check if this message has an update request already queued
 	if m.updateCountdown > time.Now().Unix() {
@@ -93,9 +96,8 @@ func (m *Message) Update(ctx context.Context, errch chan error) {
 	timeToUpdate := time.Now().Add(time.Duration(500 * time.Millisecond)).Unix()
 	m.updateCountdown = timeToUpdate
 	defer func() {
-		// On function exit, release the updateLock and channel queue lock
+		// On function exit, release the updateLock
 		m.EndUpdate()
-		m.channel.ReleaseQueue()
 	}()
 	// Wait for the update countdown to expire
 	for m.updateCountdown < time.Now().Unix() {
@@ -111,7 +113,6 @@ func (m *Message) Update(ctx context.Context, errch chan error) {
 	m.bot.Logger.Debug().Str("msg", m.Label).Msg("Updating message")
 
 	// send the api request to edit the message
-	m.channel.LockQueue()
 	starttime := time.Now()
 	_, err = m.bot.Session.ChannelMessageEditComplex(&discordgo.MessageEdit{
 		ID:         m.ID,
@@ -143,14 +144,12 @@ func (m *Message) SendNew(ctx context.Context, errch chan error) {
 	m.bot.Logger.Debug().Str("msg", m.Label).Msg("Sending message")
 
 	// send the api request to send the message
-	m.channel.LockQueue()
 	starttime := time.Now()
 	message, err := m.bot.Session.ChannelMessageSendComplex(m.channel.ID, &discordgo.MessageSend{
 		Content:    msg,
 		Embeds:     []*discordgo.MessageEmbed{embed},
 		Components: components,
 	})
-	m.channel.ReleaseQueue()
 	m.bot.Logger.Debug().
 		Dur("time_taken", time.Since(starttime)).
 		Str("msg", m.Label).

@@ -6,6 +6,7 @@ import (
 	"gosl/internal/discord/channels/adminchannel"
 	"gosl/internal/discord/channels/loggingchannel"
 	"gosl/internal/discord/channels/managerchannel"
+	"gosl/internal/discord/channels/registrationchannel"
 	"gosl/internal/discord/commands"
 	"gosl/internal/models"
 	"sync"
@@ -24,7 +25,7 @@ func Start(ctx context.Context, b *bot.Bot) error {
 
 	// Setup log channel first so startup issues can be reported in discord
 	b.AddChannel(logchannel.LogChannel)
-	err = b.Channels[models.ChannelLog].Setup(ctx)
+	err = b.Channels[models.ChannelLog].Setup(ctx, true)
 	if err != nil {
 		return errors.Wrap(err, "Channel.Setup (LogChannel)")
 	}
@@ -42,6 +43,7 @@ func Start(ctx context.Context, b *bot.Bot) error {
 		commands.Setup,
 		adminchannel.Setup,
 		managerchannel.Setup,
+		registrationchannel.Setup,
 	}
 
 	// Run all the setup commands

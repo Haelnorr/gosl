@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS player(
     id INTEGER PRIMARY KEY,
     slap_id INTEGER UNIQUE,
     name TEXT UNIQUE,
-    discord_id TEXT UNIQUE
+    discord_id TEXT UNIQUE DEFAULT ""
 ) STRICT;
 
 CREATE TABLE IF NOT EXISTS player_team(

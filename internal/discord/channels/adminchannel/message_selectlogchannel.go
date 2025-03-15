@@ -70,9 +70,10 @@ func handleSelectLogChannelInteraction(
 	ctx context.Context,
 	tx *db.SafeWTX,
 	b *bot.Bot,
-	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
+	selectLogChannel := b.Channels[models.ChannelAdmin].Messages[models.MsgSelectLogChannel]
+	selectLogChannel.StartUpdate(false)
 	selectedChannel := i.MessageComponentData().Values[0]
 	err := models.SetChannel(ctx, tx, selectedChannel, models.ChannelLog)
 	if err != nil {
@@ -82,13 +83,13 @@ func handleSelectLogChannelInteraction(
 	channel := i.MessageComponentData().Resolved.Channels[selectedChannel]
 	msg := "Log channel updated to: " + channel.Name
 	b.Log().UserEvent(i.Member, msg)
-	bot.ReplyEphemeral("Updated log channel to "+channel.Name, s, i, b.Logger)
+	b.Reply("Updated log channel to "+channel.Name, i)
 	// Spin off updating the message so it doesnt block/get blocked by the transaction
 	// and runs as soon as the interaction is completed
 	go func() {
 		b.Logger.Debug().Msg("Updating log channel select")
 		errch := make(chan error)
-		b.Channels[models.ChannelAdmin].Messages[models.MsgSelectLogChannel].Update(ctx, errch)
+		go selectLogChannel.Update(ctx, errch)
 		if <-errch != nil {
 			b.Logger.Warn().Err(err).
 				Msg("Failed to update select log channel message after interaction")

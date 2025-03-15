@@ -25,11 +25,10 @@ func (b *Bot) Log() *logmsg {
 func (b *Bot) TripleError(
 	msg string,
 	err error,
-	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) {
 	b.Logger.Error().Err(err).Msg(msg)
-	b.Error(msg, err.Error(), s, i)
+	b.Error(msg, err.Error(), i)
 	b.Log().Error(msg, err)
 }
 

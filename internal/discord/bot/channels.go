@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gosl/internal/models"
+	"gosl/pkg/db"
 	"sync"
 	"time"
 
@@ -20,12 +21,11 @@ type Channel struct {
 	Messages map[uint16]*Message
 	Handler  Handler
 	bot      *Bot
-	apiQueue sync.Mutex
 }
 
 // Setups up the channel in discord, finding an existing channel or creating
 // a new one if no existing channel can be found
-func (c *Channel) Setup(ctx context.Context) error {
+func (c *Channel) Setup(ctx context.Context, forceCreate bool) error {
 	if c.bot == nil {
 		return errors.New(fmt.Sprintf("Channel not registered to bot (%s)", c.Label))
 	}
@@ -35,7 +35,7 @@ func (c *Channel) Setup(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "FindExisting")
 	}
-	if channelID == "" {
+	if channelID == "" && forceCreate {
 		// Setup a new channel
 		channelID, err = c.createNew(ctx)
 		if err != nil {
@@ -50,39 +50,36 @@ func (c *Channel) Setup(ctx context.Context) error {
 	return nil
 }
 
-// TODO: these dont appear to help, leave them in for now but remove if unnecessary
-// Lock the api request queue for this channel
-func (c *Channel) LockQueue() {
-	// c.apiQueue.Lock()
-}
-
-// Unlock the api request queue for this channel
-func (c *Channel) ReleaseQueue() {
-	// NOTE: Tweak this delay for best results
-	go func() {
-		// time.Sleep(500 * time.Millisecond)
-		// c.apiQueue.Unlock()
-	}()
-}
-
 // Updates the channel ID of the channel and saves it in the database
-func (c *Channel) UpdateTarget(ctx context.Context, newID string) error {
-	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
-	defer cancel()
-	tx, err := c.bot.Conn.Begin(timeout)
-	if err != nil {
-		return errors.Wrap(err, "conn.Begin")
-	}
-	defer tx.Rollback()
-	err = models.SetChannel(ctx, tx, newID, c.Purpose)
+func (c *Channel) UpdateTarget(ctx context.Context, tx *db.SafeWTX, newID string) error {
+	err := models.SetChannel(ctx, tx, newID, c.Purpose)
 	if err != nil {
 		return errors.Wrap(err, "models.SetChannel")
 	}
+	for _, message := range c.Messages {
+		c.DeleteMessage(message)
+		err = models.RemoveMessage(ctx, tx, message.ID, c.ID, message.Purpose)
+		if err != nil {
+			return errors.Wrap(err, "models.RemoveMessage")
+		}
+		message.ID = ""
+	}
 	c.ID = newID
-	// TODO: delete all messages from discord (warn gracefully if message not found)
-	// TODO: delete all messages from database
-	// TODO: set all message IDs to ""
-	// TODO: resend all messages to new channel
+	go func() {
+		errch := make(chan error)
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go c.SetupMessages(ctx, &wg, errch)
+		go func() {
+			wg.Wait()
+			close(errch)
+		}()
+		for err := range errch {
+			if err != nil {
+				c.bot.Logger.Error().Err(err).Msg("Failed sending message")
+			}
+		}
+	}()
 	return nil
 }
 
@@ -104,11 +101,18 @@ func (c *Channel) RegisterMessage(m *Message) error {
 	return nil
 }
 
-// Prepares and updates all the messages in the channel. Should only be run on startup
-func (c *Channel) SetupMessages(ctx context.Context, errch chan error) {
+// Prepares and updates all the messages in the channel.
+// func (c *Channel) SetupMessages(ctx context.Context, errch chan error) {
+func (c *Channel) SetupMessages(ctx context.Context, swg *sync.WaitGroup, errch chan error) {
+	defer swg.Done()
+	if c.ID == "" {
+		c.bot.Logger.Debug().Str("channel", c.Label).Msg("Channel not set, skipping message updates")
+		return
+	}
 	var wg sync.WaitGroup
 	c.bot.Logger.Debug().Str("channel", c.Label).Msg("Setting up messages")
 	for _, message := range c.Messages {
+		c.bot.Logger.Debug().Str("msg", message.Label).Msg("Setting up message")
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -141,6 +145,14 @@ func (c *Channel) SendMessage(
 		return errors.Wrap(err, "session.ChannelMessageSendComplex")
 	}
 	return nil
+}
+
+func (c *Channel) DeleteMessage(m *Message) {
+	err := c.bot.Session.ChannelMessageDelete(c.ID, m.ID)
+	if err != nil {
+		c.bot.Logger.Warn().Err(err).Str("msg", m.Label).
+			Msg("Failed to delete message in discord")
+	}
 }
 
 // ===========================================================================

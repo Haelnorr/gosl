@@ -125,7 +125,7 @@ func activeSeasonComponents(
 func handleSetSeasonDatesButtonInteraction(
 	ctx context.Context,
 	tx *db.SafeWTX,
-	s *discordgo.Session,
+	b *bot.Bot,
 	i *discordgo.InteractionCreate,
 ) error {
 	season, err := models.GetActiveSeason(ctx, tx)
@@ -173,7 +173,7 @@ func handleSetSeasonDatesButtonInteraction(
 			},
 		},
 	}
-	err = bot.ReplyModal("Set Season Dates", "set_season_dates_modal", components, s, i)
+	err = b.ReplyModal("Set Season Dates", "set_season_dates_modal", components, i)
 	if err != nil {
 		return errors.Wrap(err, "messages.ReplyModal")
 	}
@@ -184,9 +184,10 @@ func handleSetSeasonDatesModalInteraction(
 	ctx context.Context,
 	tx *db.SafeWTX,
 	b *bot.Bot,
-	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
+	activeSeasonInfo := b.Channels[models.ChannelManager].Messages[models.MsgActiveSeason]
+	activeSeasonInfo.StartUpdate(false)
 	startDate := i.ModalSubmitData().Components[0].(*discordgo.ActionsRow).
 		Components[0].(*discordgo.TextInput).Value
 	regEndDate := i.ModalSubmitData().Components[1].(*discordgo.ActionsRow).
@@ -209,13 +210,13 @@ Regular Season End: %s
 Finals End: %s`
 	msg = fmt.Sprintf(msg, season.Name, season.Start, season.RegSeasonEnd, season.FinalsEnd)
 	b.Log().UserEvent(i.Member, msg)
-	bot.ReplyEphemeral(msg, s, i, b.Logger)
+	b.Reply(msg, i)
 	// Spin off updating the message so it doesnt block/get blocked by the transaction
 	// and runs as soon as the interaction is completed
 	go func() {
 		b.Logger.Debug().Msg("Updating active season message")
 		errch := make(chan error)
-		b.Channels[models.ChannelManager].Messages[models.MsgActiveSeason].Update(ctx, errch)
+		go activeSeasonInfo.Update(ctx, errch)
 		if <-errch != nil {
 			msg := "Failed to update active season message after interaction"
 			b.Logger.Warn().Err(err).
@@ -231,9 +232,10 @@ func handleToggleRegistrationInteraction(
 	ctx context.Context,
 	tx *db.SafeWTX,
 	b *bot.Bot,
-	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
+	activeSeasonInfo := b.Channels[models.ChannelManager].Messages[models.MsgActiveSeason]
+	activeSeasonInfo.StartUpdate(false)
 	b.Logger.Debug().Msg("Getting active season")
 	season, err := models.GetActiveSeason(ctx, tx)
 	if err != nil {
@@ -248,13 +250,13 @@ func handleToggleRegistrationInteraction(
 	msg := "Registration status for %s set to %s"
 	msg = fmt.Sprintf(msg, season.Name, season.RegistrationStatusString())
 	b.Log().UserEvent(i.Member, msg)
-	bot.ReplyEphemeral(msg, s, i, b.Logger)
+	b.Reply(msg, i)
 	// Spin off updating the message so it doesnt block/get blocked by the transaction
 	// and runs as soon as the interaction is completed
 	go func() {
 		b.Logger.Debug().Msg("Updating active season message")
 		errch := make(chan error)
-		b.Channels[models.ChannelManager].Messages[models.MsgActiveSeason].Update(ctx, errch)
+		go activeSeasonInfo.Update(ctx, errch)
 		if <-errch != nil {
 			b.Logger.Warn().Err(err).
 				Msg("Failed to update active season message after interaction")
@@ -269,9 +271,10 @@ func handleSelectLeaguesInteraction(
 	ctx context.Context,
 	tx *db.SafeWTX,
 	b *bot.Bot,
-	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
+	activeSeasonInfo := b.Channels[models.ChannelManager].Messages[models.MsgActiveSeason]
+	activeSeasonInfo.StartUpdate(false)
 	b.Logger.Debug().Msg("Getting active season")
 	season, err := models.GetActiveSeason(ctx, tx)
 	if err != nil {
@@ -289,13 +292,13 @@ func handleSelectLeaguesInteraction(
 	}
 	msg = fmt.Sprintf(msg, season.Name)
 	b.Log().UserEvent(i.Member, msg)
-	bot.ReplyEphemeral(msg, s, i, b.Logger)
+	b.Reply(msg, i)
 	// Spin off updating the message so it doesnt block/get blocked by the transaction
 	// and runs as soon as the interaction is completed
 	go func() {
 		b.Logger.Debug().Msg("Updating active season message")
 		errch := make(chan error)
-		b.Channels[models.ChannelManager].Messages[models.MsgActiveSeason].Update(ctx, errch)
+		go activeSeasonInfo.Update(ctx, errch)
 		if <-errch != nil {
 			b.Logger.Warn().Err(err).
 				Msg("Failed to update active season message after interaction")

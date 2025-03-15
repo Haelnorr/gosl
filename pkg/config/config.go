@@ -32,6 +32,9 @@ type Config struct {
 	LogDir             string        // Path to create log files
 	DiscordBotToken    string        // Discord Bot Token
 	DiscordGuildID     string        // ID of the discord server
+	SteamAPIKey        string        // Steam API Key
+	SlapshotAPIKey     string        // Slapshot API Key
+	SlapshotAPIEnv     string        // Slapshot API Env
 	Locale             string        // IANA TZ Locale
 }
 
@@ -101,6 +104,9 @@ func GetConfig(args map[string]string) (*Config, error) {
 		LogDir:             GetEnvDefault("LOG_DIR", ""),
 		DiscordBotToken:    os.Getenv("DISCORD_BOT_TOKEN"),
 		DiscordGuildID:     os.Getenv("DISCORD_GUILD_ID"),
+		SteamAPIKey:        os.Getenv("STEAM_API_KEY"),
+		SlapshotAPIKey:     os.Getenv("SLAPSHOT_API_KEY"),
+		SlapshotAPIEnv:     GetEnvDefault("SLAPSHOT_API_ENV", "staging"),
 		Locale:             GetEnvDefault("LOCALE_TZ", "UTC"),
 	}
 
@@ -112,6 +118,12 @@ func GetConfig(args map[string]string) (*Config, error) {
 	}
 	if config.DiscordGuildID == "" && args["dbver"] != "true" {
 		return nil, errors.New("Envar not set: DISCORD_GUILD_ID")
+	}
+	if config.SteamAPIKey == "" && args["dbver"] != "true" {
+		return nil, errors.New("Envar not set: STEAM_API_KEY")
+	}
+	if config.SlapshotAPIKey == "" && args["dbver"] != "true" {
+		return nil, errors.New("Envar not set: SLAPSHOT_API_KEY")
 	}
 
 	_, err := time.LoadLocation(config.Locale)

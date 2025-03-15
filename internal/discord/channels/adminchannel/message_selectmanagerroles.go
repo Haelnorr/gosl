@@ -72,9 +72,10 @@ func handleSelectManagerRolesInteraction(
 	ctx context.Context,
 	tx *db.SafeWTX,
 	b *bot.Bot,
-	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) error {
+	selectManagerRoles := b.Channels[models.ChannelAdmin].Messages[models.MsgSelectManagerRoles]
+	selectManagerRoles.StartUpdate(false)
 	roles := i.MessageComponentData().Values
 	err := models.SetRoles(ctx, tx, roles, models.PermLeagueManager)
 	if err != nil {
@@ -86,14 +87,13 @@ func handleSelectManagerRolesInteraction(
 		msg = msg + " - " + droles[role].Name + "\n"
 	}
 	b.Log().UserEvent(i.Member, msg)
-	bot.ReplyEphemeral(msg, s, i, b.Logger)
+	b.Reply(msg, i)
 	// Spin off updating the message so it doesnt block/get blocked by the transaction
 	// and runs as soon as the interaction is completed
 	go func() {
 		errch := make(chan error)
 		b.Logger.Debug().Msg("Updating manager roles select")
-		b.Channels[models.ChannelAdmin].Messages[models.MsgSelectManagerRoles].
-			Update(ctx, errch)
+		go selectManagerRoles.Update(ctx, errch)
 		if <-errch != nil {
 			b.Logger.Warn().Err(err).
 				Msg("Failed to update select admin roles message after interaction")

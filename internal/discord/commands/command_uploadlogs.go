@@ -54,7 +54,7 @@ func handleUploadLogs(
 			if err != nil {
 				msg := "Failed to download attachment: " + attachment.Filename
 				b.Logger.Error().Err(err).Str("url", attachment.URL).Msg(msg)
-				b.Error(msg, err.Error(), s, i)
+				b.Error(msg, err.Error(), i)
 				b.Log().Error(msg, err)
 				return
 			}
@@ -64,7 +64,7 @@ func handleUploadLogs(
 			if err != nil {
 				msg := "Failed to read file: " + attachment.Filename
 				b.Logger.Error().Err(err).Str("filename", attachment.Filename).Msg(msg)
-				b.Error(msg, err.Error(), s, i)
+				b.Error(msg, err.Error(), i)
 				b.Log().Error(msg, err)
 				return
 			}
@@ -73,7 +73,7 @@ func handleUploadLogs(
 			if err != nil {
 				msg := "Failed to parse log file: " + attachment.Filename
 				b.Logger.Error().Err(err).Str("filename", attachment.Filename).Msg(msg)
-				b.Error(msg, err.Error(), s, i)
+				b.Error(msg, err.Error(), i)
 				b.Log().Error(msg, err)
 				return
 			}
@@ -82,7 +82,7 @@ func handleUploadLogs(
 
 		// TODO: actually do something with the log data
 
-		err := bot.ReplyEphemeral("Log files uploaded", s, i, b.Logger)
+		err := b.Reply("Log files uploaded", i)
 		if err != nil {
 			b.Logger.Error().Err(err).Msg("Failed to reply to interaction")
 		}

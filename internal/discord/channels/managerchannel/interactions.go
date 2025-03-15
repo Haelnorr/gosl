@@ -13,33 +13,26 @@ import (
 func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 	b.Logger.Debug().Msg("Adding handler for manager channel interactions")
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		if i.Message.ChannelID != b.Channels[models.ChannelManager].ID {
+			return
+		}
 		// setup the database transaction
 		timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
 		defer cancel()
 		tx, err := b.Conn.Begin(timeout)
 		msg := "Failed to handle interaction in manager channel"
 		if err != nil {
-			b.TripleError(msg, err, s, i)
+			b.TripleError(msg, err, i)
 			return
 		}
 		defer tx.Rollback()
-
-		// Make sure interaction happened from manager channel
-		channelID, err := models.GetChannel(ctx, tx, models.ChannelManager)
-		if err != nil {
-			b.TripleError(msg, err, s, i)
-			return
-		}
-		if i.Message.ChannelID != channelID {
-			return
-		}
 		b.Logger.Debug().Msg("Handling manager channel interaction")
 
 		// Check the user has permissions to do league manager things
 		isLeagueManager, err := models.MemberHasPermission(
 			ctx, tx, s, b.Config.DiscordGuildID, i.Member, models.PermLeagueManager)
 		if !isLeagueManager {
-			b.Forbidden(s, i)
+			b.Forbidden(i)
 			return
 		}
 
@@ -49,22 +42,22 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 			switch i.MessageComponentData().CustomID {
 			case "season_select":
 				b.Logger.Debug().Msg("Handling season select interaction")
-				err = handleSelectSeasonInteraction(ctx, tx, b, s, i)
+				err = handleSelectSeasonInteraction(ctx, tx, b, i)
 			case "create_season_button":
 				b.Logger.Debug().Msg("Handling season create button interaction")
-				err = handleCreateSeasonButtonInteraction(s, i)
+				err = handleCreateSeasonButtonInteraction(b, i)
 			case "create_season_modal":
 				b.Logger.Debug().Msg("Handling season create modal interaction")
-				err = handleCreateSeasonModalInteraction(ctx, tx, b, s, i)
+				err = handleCreateSeasonModalInteraction(ctx, tx, b, i)
 			case "set_dates_button":
 				b.Logger.Debug().Msg("Handling season create modal interaction")
-				err = handleSetSeasonDatesButtonInteraction(ctx, tx, s, i)
+				err = handleSetSeasonDatesButtonInteraction(ctx, tx, b, i)
 			case "toggle_registration":
 				b.Logger.Debug().Msg("Handling toggle registration interaction")
-				err = handleToggleRegistrationInteraction(ctx, tx, b, s, i)
+				err = handleToggleRegistrationInteraction(ctx, tx, b, i)
 			case "select_season_leagues":
 				b.Logger.Debug().Msg("Handling select leagues interaction")
-				err = handleSelectLeaguesInteraction(ctx, tx, b, s, i)
+				err = handleSelectLeaguesInteraction(ctx, tx, b, i)
 			default:
 				err = errors.New("No handler for interaction")
 			}
@@ -74,10 +67,10 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 			switch i.ModalSubmitData().CustomID {
 			case "create_season_modal":
 				b.Logger.Debug().Msg("Handling create season modal interaction")
-				err = handleCreateSeasonModalInteraction(ctx, tx, b, s, i)
+				err = handleCreateSeasonModalInteraction(ctx, tx, b, i)
 			case "set_season_dates_modal":
 				b.Logger.Debug().Msg("Handling set season dates modal interaction")
-				err = handleSetSeasonDatesModalInteraction(ctx, tx, b, s, i)
+				err = handleSetSeasonDatesModalInteraction(ctx, tx, b, i)
 			default:
 				err = errors.New("No handler for interaction")
 			}
@@ -86,7 +79,7 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 		// start error handling for the interaction handlers
 		if err != nil {
 			msg := "Failed to handle interaction in manager channel"
-			b.TripleError(msg, err, s, i)
+			b.TripleError(msg, err, i)
 			return
 		}
 		tx.Commit()
