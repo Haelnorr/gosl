@@ -18,9 +18,10 @@ type Command struct {
 }
 
 // Get all the commands registered
-func getCommands(b *bot.Bot) []*Command {
+func getCommands(ctx context.Context, b *bot.Bot) []*Command {
 	return []*Command{
-		cmdUploadLogs(b),
+		cmdUploadLogs(ctx, b),
+		cmdTeam(ctx, b),
 	}
 }
 
@@ -32,7 +33,7 @@ func Setup(
 	b *bot.Bot,
 ) {
 	defer wg.Done()
-	commands := getCommands(b)
+	commands := getCommands(ctx, b)
 	for _, cmd := range commands {
 		_, err := b.Session.ApplicationCommandCreate(
 			b.Session.State.User.ID,

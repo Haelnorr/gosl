@@ -37,9 +37,8 @@ func Setup(
 	// register all the messages
 	var errs []error
 	errs = append(errs, channel.RegisterMessage(selectLogChannel))
-	errs = append(errs, channel.RegisterMessage(selectAdminRoles))
-	errs = append(errs, channel.RegisterMessage(selectManagerRoles))
-	errs = append(errs, channel.RegisterMessage(selectRegistrationChannel))
+	errs = append(errs, channel.RegisterMessage(selectRoles))
+	errs = append(errs, channel.RegisterMessage(selectChannels))
 
 	// check for any errors setting up messages and return if any occured
 	hadErr := false

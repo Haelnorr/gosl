@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"fmt"
 	"gosl/pkg/db"
 
 	"github.com/pkg/errors"
@@ -41,9 +42,17 @@ func GetLeagues(
 	ctx context.Context,
 	tx db.SafeTX,
 	seasonID string,
+	enabledOnly bool,
 ) (*[]League, error) {
-	query := `SELECT id, division FROM league WHERE season_id = ? AND enabled = 1;`
-	rows, err := tx.Query(ctx, query, seasonID)
+	enabledMod := ""
+	if enabledOnly {
+		enabledMod = "AND enabled = 1"
+	}
+	query := `
+SELECT id, division FROM league WHERE season_id = ? %s
+COLLATE NOCASE
+;`
+	rows, err := tx.Query(ctx, fmt.Sprintf(query, enabledMod), seasonID)
 	if err != nil {
 		return nil, errors.Wrap(err, "tx.Query")
 	}

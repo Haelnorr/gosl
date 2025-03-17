@@ -68,7 +68,6 @@ func Test_main(t *testing.T) {
 		proc, err := os.FindProcess(os.Getpid())
 		require.NoError(t, err)
 		proc.Signal(syscall.SIGUSR1)
-
 		select {
 		case <-done:
 			t.Log("found")

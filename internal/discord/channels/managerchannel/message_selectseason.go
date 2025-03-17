@@ -5,7 +5,6 @@ import (
 	"gosl/internal/discord/bot"
 	"gosl/internal/discord/components"
 	"gosl/internal/models"
-	"gosl/pkg/db"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -22,7 +21,7 @@ var selectSeason = &bot.Message{
 func selectSeasonComponents(
 	ctx context.Context,
 	b *bot.Bot,
-) (bot.MessageContents, error) {
+) (*bot.MessageContents, error) {
 	b.Logger.Debug().Msg("Setting up select season components")
 	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -40,15 +39,11 @@ func selectSeasonComponents(
 	if err != nil {
 		return nil, errors.Wrap(err, "models.GetActiveSeason")
 	}
-	noActiveSeason := false
-	if activeSeason.ID == "NOACTIVESEASON" {
-		noActiveSeason = true
-	}
 	options := []discordgo.SelectMenuOption{
 		{
 			Label:   "No active season",
 			Value:   "NOACTIVESEASON",
-			Default: noActiveSeason,
+			Default: activeSeason == nil,
 		},
 	}
 	for _, season := range seasons {
@@ -59,68 +54,25 @@ func selectSeasonComponents(
 		})
 	}
 	tx.Commit()
-	return func() (
-		string,
-		*discordgo.MessageEmbed,
-		[]discordgo.MessageComponent,
-	) {
-		b.Logger.Debug().Msg("Retreiving select season components")
-		return "",
-			&discordgo.MessageEmbed{
-				Title: "Current Season",
-				Description: `
+	contents := &bot.MessageContents{
+		Embed: &discordgo.MessageEmbed{
+			Title: "Current Season",
+			Description: `
 Select the season to be set as the active season.
 
 **NOTE**
 This will update all related messages to show data for the selected season.
 (i.e. team rosters, fixtures).`,
-				Color: 0x00ff00, // Green color
-			},
-			components.StringSelect(
-				"season_select",
-				"Select active season",
-				options,
-				1,
-				1,
-			)
-	}, nil
-}
-
-func handleSelectSeasonInteraction(
-	ctx context.Context,
-	tx *db.SafeWTX,
-	b *bot.Bot,
-	i *discordgo.InteractionCreate,
-) error {
-	msgSelectSeason := b.Channels[models.ChannelManager].Messages[models.MsgSelectSeason]
-	msgActiveSeason := b.Channels[models.ChannelManager].Messages[models.MsgActiveSeason]
-	if !msgSelectSeason.StartUpdate(false) || !msgActiveSeason.StartUpdate(false) {
-		b.Error("Slow down!", "An update is in progress, please try again", i)
-		return nil
+			Color: 0x00ff00, // Green color
+		},
+		Components: components.StringSelect(
+			"season_select",
+			"Select active season",
+			options,
+			1,
+			1,
+			false,
+		),
 	}
-	season := i.MessageComponentData().Values[0]
-	err := models.SetActiveSeason(ctx, tx, season)
-	if err != nil {
-		return errors.Wrap(err, "models.SetActiveSeason")
-	}
-
-	msg := "Active season set to: " + season
-	b.Log().UserEvent(i.Member, msg)
-	b.Reply(msg, i)
-	// Spin off updating the message so it doesnt block/get blocked by the transaction
-	// and runs as soon as the interaction is completed
-	go func() {
-		// NOTE: update any other messages that display data from the active season
-		errmsg := "Failed to update message after interaction"
-		errch := make(chan error)
-		go msgSelectSeason.Update(ctx, errch)
-		go msgActiveSeason.Update(ctx, errch)
-
-		for err := range errch {
-			if err != nil {
-				b.Logger.Warn().Err(err).Msg(errmsg)
-			}
-		}
-	}()
-	return nil
+	return contents, nil
 }

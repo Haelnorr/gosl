@@ -135,12 +135,10 @@ func (c *Channel) SetupMessages(ctx context.Context, swg *sync.WaitGroup, errch 
 func (c *Channel) SendMessage(
 	contents MessageContents,
 ) error {
-	msg, embed, components := contents()
 	c.bot.pool.queue()
 	_, err := c.bot.Session.ChannelMessageSendComplex(c.ID, &discordgo.MessageSend{
-		Content:    msg,
-		Embeds:     []*discordgo.MessageEmbed{embed},
-		Components: components,
+		Embeds:     []*discordgo.MessageEmbed{contents.Embed},
+		Components: contents.Components,
 	})
 	if err != nil {
 		return errors.Wrap(err, "session.ChannelMessageSendComplex")

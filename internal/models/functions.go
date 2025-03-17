@@ -1,6 +1,8 @@
 package models
 
 import (
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -13,6 +15,8 @@ func TimeInLocale(t *time.Time, locale string) *time.Time {
 	return &dateInTZ
 }
 
+// Converts a string value in format "2006-01-02T15:04:05Z07:00" to time.Time.
+// If nil value provided, will return nil
 func parseISO8601(isostr *string) *time.Time {
 	if isostr == nil {
 		return nil
@@ -24,6 +28,7 @@ func parseISO8601(isostr *string) *time.Time {
 	return &parsed
 }
 
+// If u is 0, returns false, else returns true
 func uint16ToBool(u uint16) bool {
 	if u == 0 {
 		return false
@@ -32,6 +37,7 @@ func uint16ToBool(u uint16) bool {
 	}
 }
 
+// Parses string in format "02/01/2006" to time.Time
 func parseTextDate(datestr string) *time.Time {
 	format := "02/01/2006"
 	if datestr == "" {
@@ -44,6 +50,7 @@ func parseTextDate(datestr string) *time.Time {
 	return &parsed
 }
 
+// Converts a time.Time to format "2006-01-02T15:04:05Z07:00". Time is nil returns ""
 func formatISO8601(t *time.Time) string {
 	if t == nil {
 		return ""
@@ -52,10 +59,25 @@ func formatISO8601(t *time.Time) string {
 	return formatted
 }
 
+// Formats time.Time to format "02/01/2006"
 func DateStr(t *time.Time) string {
 	if t == nil {
 		return ""
 	}
 	formatted := t.Format("02/01/2006")
 	return formatted
+}
+
+// Parses a hex string to an integer. E.g. color hex codes #00FF00 -> 65280
+func hexToInt(hexStr string) (int, error) {
+	if strings.HasPrefix(hexStr, "#") {
+		hexStr = hexStr[1:]
+	}
+
+	value, err := strconv.ParseInt(hexStr, 16, 0)
+	if err != nil {
+		return 0, err
+	}
+
+	return int(value), nil
 }

@@ -26,9 +26,10 @@ func (b *Bot) TripleError(
 	msg string,
 	err error,
 	i *discordgo.InteractionCreate,
+	ack bool,
 ) {
 	b.Logger.Error().Err(err).Msg(msg)
-	b.Error(msg, err.Error(), i)
+	b.Error(msg, err.Error(), i, ack)
 	b.Log().Error(msg, err)
 }
 
@@ -73,17 +74,12 @@ func (l *logmsg) Info(msg string) {
 }
 
 func (l *logmsg) logMsgContents() MessageContents {
-	return func() (
-		string,
-		*discordgo.MessageEmbed,
-		[]discordgo.MessageComponent,
-	) {
-		return "",
-			&discordgo.MessageEmbed{
-				Title:       l.level,
-				Description: l.message,
-				Color:       l.color,
-			},
-			nil
+	return MessageContents{
+		Embed: &discordgo.MessageEmbed{
+			Title:       l.level,
+			Description: l.message,
+			Color:       l.color,
+		},
+		Components: nil,
 	}
 }

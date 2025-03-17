@@ -10,18 +10,18 @@ import (
 
 const (
 	// Admin channel messages
-	MsgSelectLogChannel          uint16 = 1 // select log channel component
-	MsgSelectAdminRoles          uint16 = 2 // select admin roles component
-	MsgSelectManagerRoles        uint16 = 3 // select manager roles component
-	MsgSelectRegistrationChannel uint16 = 8 // select registration channel component
+	MsgSelectLogChannel uint16 = 1 // select log channel component
+	MsgSelectRoles      uint16 = 2 // select manager roles component
+	MsgSelectChannels   uint16 = 3 // select registration channel component
 
 	// Manager channel messages
-	MsgSelectSeason uint16 = 4 // select season component
-	MsgCreateSeason uint16 = 5 // create season component
-	MsgActiveSeason uint16 = 6 // active season component
+	MsgSelectSeason uint16 = 11 // select season component
+	MsgCreateSeason uint16 = 12 // create season component
+	MsgActiveSeason uint16 = 13 // active season component
 
 	// Registration channel messages
-	MsgPlayerRegistration uint16 = 7 // player registration component
+	MsgPlayerRegistration uint16 = 21 // player registration component
+	MsgTeamRegistration   uint16 = 22 // team registration component
 )
 
 // Set the provided message as the message used for the provided purpose

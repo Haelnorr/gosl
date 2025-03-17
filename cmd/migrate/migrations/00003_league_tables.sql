@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS team(
     abbreviation TEXT UNIQUE NOT NULL,
     name TEXT UNIQUE NOT NULL,
     manager_id INTEGER NOT NULL,
+    color TEXT DEFAULT "",
     FOREIGN KEY(manager_id) REFERENCES player(id)
 ) STRICT;
 

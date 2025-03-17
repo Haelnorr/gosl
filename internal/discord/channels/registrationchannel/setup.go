@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Setup the admin channel
+// Setup the registration channel
 func Setup(
 	wg *sync.WaitGroup,
 	errch chan error,
@@ -35,7 +35,8 @@ func Setup(
 
 	// register all the messages
 	var errs []error
-	errs = append(errs, channel.RegisterMessage(selectManagerRoles))
+	errs = append(errs, channel.RegisterMessage(playerRegistration))
+	errs = append(errs, channel.RegisterMessage(teamRegistration))
 
 	// check for any errors setting up messages and return if any occured
 	hadErr := false

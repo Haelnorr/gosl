@@ -7,6 +7,8 @@ func TextInput(
 	label string,
 	required bool,
 	value string,
+	minlen int,
+	maxlen int,
 ) *discordgo.ActionsRow {
 	return &discordgo.ActionsRow{
 		Components: []discordgo.MessageComponent{
@@ -17,6 +19,8 @@ func TextInput(
 				Placeholder: label + "...",
 				Required:    required,
 				Value:       value,
+				MinLength:   minlen,
+				MaxLength:   maxlen,
 			},
 		},
 	}

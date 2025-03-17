@@ -6,8 +6,10 @@ import (
 	"gosl/internal/discord/channels/adminchannel"
 	"gosl/internal/discord/channels/loggingchannel"
 	"gosl/internal/discord/channels/managerchannel"
+	"gosl/internal/discord/channels/registrationapprovalchannel"
 	"gosl/internal/discord/channels/registrationchannel"
 	"gosl/internal/discord/commands"
+	"gosl/internal/discord/directmessages"
 	"gosl/internal/models"
 	"sync"
 	"time"
@@ -29,10 +31,8 @@ func Start(ctx context.Context, b *bot.Bot) error {
 	if err != nil {
 		return errors.Wrap(err, "Channel.Setup (LogChannel)")
 	}
-	// err = logchannel.Setup(ctx, b)
-	// if err != nil {
-	// 	return errors.Wrap(err, "b.setupLogChannel")
-	// }
+	// Add interaction handlers for DM's
+	b.Session.AddHandler(directmessages.HandleDMInteractions(ctx, b))
 
 	// Do other setup concurrently to reduce startup time
 	var wg sync.WaitGroup
@@ -44,6 +44,7 @@ func Start(ctx context.Context, b *bot.Bot) error {
 		adminchannel.Setup,
 		managerchannel.Setup,
 		registrationchannel.Setup,
+		registrationapprovalchannel.Setup,
 	}
 
 	// Run all the setup commands

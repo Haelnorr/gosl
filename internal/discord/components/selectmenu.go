@@ -59,6 +59,7 @@ func StringSelect(
 	options []discordgo.SelectMenuOption,
 	minValues int,
 	maxValues int,
+	disabled bool,
 ) []discordgo.MessageComponent {
 	return []discordgo.MessageComponent{
 		&discordgo.ActionsRow{
@@ -70,6 +71,7 @@ func StringSelect(
 					Options:     options,
 					MinValues:   &minValues,
 					MaxValues:   maxValues,
+					Disabled:    disabled,
 				},
 			},
 		},

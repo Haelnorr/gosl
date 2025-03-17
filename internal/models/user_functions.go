@@ -37,7 +37,7 @@ func fetchUserData(
 	ctx context.Context,
 	tx db.SafeTX,
 	column string,
-	value interface{},
+	value any,
 ) (*sql.Rows, error) {
 	query := fmt.Sprintf(
 		`SELECT 

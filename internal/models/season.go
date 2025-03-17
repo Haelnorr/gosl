@@ -48,6 +48,18 @@ func CreateSeason(
 	s.Name = name
 	s.Active = false
 	s.RegistrationOpen = false
+	err = AddLeague(ctx, tx, s.ID, "Open")
+	if err != nil {
+		return nil, errors.Wrap(err, "AddLeague (Open)")
+	}
+	err = AddLeague(ctx, tx, s.ID, "IM")
+	if err != nil {
+		return nil, errors.Wrap(err, "AddLeague (IM)")
+	}
+	err = AddLeague(ctx, tx, s.ID, "Pro")
+	if err != nil {
+		return nil, errors.Wrap(err, "AddLeague (Pro)")
+	}
 	return &s, nil
 }
 
@@ -98,12 +110,7 @@ FROM season WHERE active = 1;
 	}
 	season, err := scanSeason(row)
 	if err == sql.ErrNoRows {
-		return &Season{
-			ID:               "NOACTIVESEASON",
-			Name:             "No active season",
-			Active:           false,
-			RegistrationOpen: false,
-		}, nil
+		return nil, nil
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "scanSeason")

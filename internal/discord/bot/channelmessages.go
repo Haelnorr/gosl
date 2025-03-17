@@ -23,10 +23,14 @@ type Message struct {
 }
 
 // Function for returning message contents for a complex message
-type MessageContents func() (string, *discordgo.MessageEmbed, []discordgo.MessageComponent)
+// type MessageContents func() (string, *discordgo.MessageEmbed, []discordgo.MessageComponent)
+type MessageContents struct {
+	Embed      *discordgo.MessageEmbed
+	Components []discordgo.MessageComponent
+}
 
 // Function that returns a MessageContents with the context and bot provided
-type MessageContentsFunc func(ctx context.Context, b *Bot) (MessageContents, error)
+type MessageContentsFunc func(ctx context.Context, b *Bot) (*MessageContents, error)
 
 // Prepare the message by checking the database
 func (m *Message) Setup(ctx context.Context, wg *sync.WaitGroup, errch chan error) {
@@ -109,7 +113,6 @@ func (m *Message) Update(ctx context.Context, errch chan error) {
 		errch <- errors.Wrap(err, fmt.Sprintf("m.GetContents (%s)", m.Label))
 		return
 	}
-	msg, embed, components := contents()
 	m.bot.Logger.Debug().Str("msg", m.Label).Msg("Updating message")
 
 	// send the api request to edit the message
@@ -118,9 +121,8 @@ func (m *Message) Update(ctx context.Context, errch chan error) {
 	_, err = m.bot.Session.ChannelMessageEditComplex(&discordgo.MessageEdit{
 		ID:         m.ID,
 		Channel:    m.channel.ID,
-		Content:    &msg,
-		Embeds:     &[]*discordgo.MessageEmbed{embed},
-		Components: &components,
+		Embeds:     &[]*discordgo.MessageEmbed{contents.Embed},
+		Components: &contents.Components,
 	})
 	m.bot.Logger.Debug().
 		Dur("time_taken", time.Since(starttime)).
@@ -141,16 +143,14 @@ func (m *Message) SendNew(ctx context.Context, errch chan error) {
 		errch <- errors.Wrap(err, fmt.Sprintf("m.GetContents (%s)", m.Label))
 		return
 	}
-	msg, embed, components := contents()
 	m.bot.Logger.Debug().Str("msg", m.Label).Msg("Sending message")
 
 	// send the api request to send the message
 	m.bot.pool.queue()
 	starttime := time.Now()
 	message, err := m.bot.Session.ChannelMessageSendComplex(m.channel.ID, &discordgo.MessageSend{
-		Content:    msg,
-		Embeds:     []*discordgo.MessageEmbed{embed},
-		Components: components,
+		Embeds:     []*discordgo.MessageEmbed{contents.Embed},
+		Components: contents.Components,
 	})
 	m.bot.Logger.Debug().
 		Dur("time_taken", time.Since(starttime)).
