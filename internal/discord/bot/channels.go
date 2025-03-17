@@ -136,6 +136,7 @@ func (c *Channel) SendMessage(
 	contents MessageContents,
 ) error {
 	msg, embed, components := contents()
+	c.bot.pool.queue()
 	_, err := c.bot.Session.ChannelMessageSendComplex(c.ID, &discordgo.MessageSend{
 		Content:    msg,
 		Embeds:     []*discordgo.MessageEmbed{embed},
@@ -176,7 +177,7 @@ func (c *Channel) findExisting(ctx context.Context) (string, error) {
 	var selectedChannelID string
 	deadChannels := []string{}
 	for _, channelID := range channelIDs {
-		if exists := checkChannelExists(channelID, c.bot.Session); exists {
+		if exists := checkChannelExists(channelID, c.bot); exists {
 			c.bot.Logger.Debug().Str("channel", c.Label).Msg("Channel found")
 			selectedChannelID = channelID
 		} else {
@@ -199,12 +200,12 @@ func (c *Channel) createNew(ctx context.Context) (string, error) {
 	defer tx.Rollback()
 
 	c.bot.Logger.Debug().Str("channel", c.Label).Msg("Creating new channel")
+	c.bot.pool.queue()
 	channel, err := c.bot.Session.GuildChannelCreate(
 		c.bot.Config.DiscordGuildID, c.Name, discordgo.ChannelTypeGuildText)
 	if err != nil {
 		return "", errors.Wrap(err, "session.GuildChannelCreate")
 	}
-
 	c.bot.Logger.Debug().Str("channel", c.Label).Msg("Adding new channel to database")
 	err = models.AddChannel(ctx, tx, channel.ID, c.Purpose)
 	if err != nil {
@@ -215,11 +216,12 @@ func (c *Channel) createNew(ctx context.Context) (string, error) {
 }
 
 // Check with the discord API if the channel exists
-func checkChannelExists(channelID string, s *discordgo.Session) bool {
+func checkChannelExists(channelID string, b *Bot) bool {
 	if channelID == "" {
 		return false
 	}
-	_, err := s.Channel(channelID)
+	// b.apiQueue.queue()
+	_, err := b.Session.Channel(channelID)
 	return err == nil
 }
 

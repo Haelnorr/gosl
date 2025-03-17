@@ -20,6 +20,7 @@ type Bot struct {
 	Conn     *db.SafeConn
 	Config   *config.Config
 	Channels map[uint16]*Channel
+	pool     *requestPool
 }
 
 // Create a new bot and start a session
@@ -33,14 +34,16 @@ func NewBot(
 	if err != nil {
 		return nil, errors.Wrap(err, "discordgo.New")
 	}
-	return &Bot{
+	bot := &Bot{
 		Session:  session,
 		Logger:   l,
 		Files:    f,
 		Conn:     c,
 		Config:   cfg,
 		Channels: make(map[uint16]*Channel),
-	}, nil
+		pool:     newRequestPool(),
+	}
+	return bot, nil
 }
 
 // Add a new channel to the bot. Fails if a channel with the same purpose has

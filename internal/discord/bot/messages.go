@@ -52,7 +52,7 @@ func (m *Message) Setup(ctx context.Context, wg *sync.WaitGroup, errch chan erro
 
 	// Make sure the channel ID matches the expected channel and the message exists
 	if channelID == m.channel.ID {
-		if checkMessageExists(messageID, channelID, m.bot.Session) {
+		if checkMessageExists(messageID, channelID, m.bot) {
 			m.ID = messageID
 		}
 	}
@@ -113,6 +113,7 @@ func (m *Message) Update(ctx context.Context, errch chan error) {
 	m.bot.Logger.Debug().Str("msg", m.Label).Msg("Updating message")
 
 	// send the api request to edit the message
+	m.bot.pool.queue()
 	starttime := time.Now()
 	_, err = m.bot.Session.ChannelMessageEditComplex(&discordgo.MessageEdit{
 		ID:         m.ID,
@@ -144,6 +145,7 @@ func (m *Message) SendNew(ctx context.Context, errch chan error) {
 	m.bot.Logger.Debug().Str("msg", m.Label).Msg("Sending message")
 
 	// send the api request to send the message
+	m.bot.pool.queue()
 	starttime := time.Now()
 	message, err := m.bot.Session.ChannelMessageSendComplex(m.channel.ID, &discordgo.MessageSend{
 		Content:    msg,
@@ -181,7 +183,8 @@ func (m *Message) SendNew(ctx context.Context, errch chan error) {
 // ===========================================================================
 
 // Check if a message exists with the discord API
-func checkMessageExists(messageID, channelID string, s *discordgo.Session) bool {
-	_, err := s.ChannelMessage(channelID, messageID)
+func checkMessageExists(messageID, channelID string, b *Bot) bool {
+	// b.apiQueue.queue()
+	_, err := b.Session.ChannelMessage(channelID, messageID)
 	return err == nil
 }
