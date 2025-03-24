@@ -21,9 +21,9 @@ func teamRegistrationContents(
 	ctx context.Context,
 	b *bot.Bot,
 ) (*bot.MessageContents, error) {
-	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	tx, err := b.Conn.RBegin(timeout)
+	tx, err := b.Conn.RBegin(timeout, "teamRegistrationContents()")
 	if err != nil {
 		return nil, errors.Wrap(err, "b.Conn.RBegin")
 	}

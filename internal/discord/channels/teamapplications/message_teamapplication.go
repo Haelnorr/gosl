@@ -1,4 +1,4 @@
-package registrationapprovalchannel
+package teamapplications
 
 import (
 	"context"
@@ -15,13 +15,14 @@ import (
 )
 
 func NewTeamApplicationMsg(ctx context.Context, b *bot.Bot) (*bot.DynamicMessage, error) {
-	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	tx, err := b.Conn.RBegin(timeout)
+	tx, err := b.Conn.RBegin(timeout, "NewTeamApplicationMsg")
 	if err != nil {
 		return nil, errors.Wrap(err, "b.Conn.RBegin")
 	}
-	channelID, err := models.GetChannel(ctx, tx, models.ChannelRegistrationApproval)
+	defer tx.Rollback()
+	channelID, err := models.GetChannel(ctx, tx, models.ChannelTeamApplications)
 	if err != nil {
 		return nil, errors.Wrap(err, "models.GetChannel")
 	}
@@ -64,9 +65,11 @@ func TeamApplicationContents(
 	statusMsg := "Pending"
 	canPlace := false
 	if app.Approved != nil {
-		if *app.Approved == 1 || app.Placed == 0 {
+		if *app.Approved == 1 && app.Placed == 0 {
 			statusMsg = "Approved"
 			canPlace = true
+		} else if *app.Approved == 1 && app.Placed != 0 {
+			statusMsg = "Placed"
 		} else {
 			statusMsg = "Rejected"
 		}
@@ -92,14 +95,13 @@ func TeamApplicationContents(
 	)
 	embed := &discordgo.MessageEmbed{
 		Color: team.Color,
-		// USE FOR TEAM WITH LOGO SUBMITTED ALREADY
-		// Author: &discordgo.MessageEmbedAuthor{
-		// 	Name:    teamName,
-		// 	IconURL:.Avatar,
-		// },
+		Author: &discordgo.MessageEmbedAuthor{
+			Name:    fmt.Sprintf("%s (%s)", team.Name, team.Abbreviation),
+			IconURL: team.Logo,
+		},
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name: fmt.Sprintf("Team Application - %s (%s)", team.Name, team.Abbreviation),
+				Name: "Team Application",
 				Value: fmt.Sprintf(`
 **%s has applied to join %s!**
 __Preferred League:__ %s

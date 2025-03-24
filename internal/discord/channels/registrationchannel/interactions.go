@@ -2,7 +2,6 @@ package registrationchannel
 
 import (
 	"context"
-	"fmt"
 	"gosl/internal/discord/bot"
 	"gosl/internal/models"
 	"strings"
@@ -23,9 +22,9 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 			return
 		}
 		ack := false
-		timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+		timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
-		tx, err := b.Conn.Begin(timeout)
+		tx, err := b.Conn.Begin(timeout, "Registration channel interaction handler")
 		msg := "Failed to handle interaction in regsistration channel"
 		if err != nil {
 			b.TripleError(msg, err, i, ack)
@@ -37,31 +36,29 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 		if i.Type == discordgo.InteractionMessageComponent {
 			// Handle message component interactions
 			customID := i.MessageComponentData().CustomID
+			b.Logger.Debug().Str("custom_id", customID).Msg("Handling interaction")
 			switch {
 			case customID == "player_registration_button":
-				b.Logger.Debug().Msg("Handling player registration button interaction")
 				err = handlePlayerRegistrationButtonInteraction(ctx, tx, b, i)
 			case strings.Contains(customID, "confirm_slapid_"):
-				b.Logger.Debug().Msg("Handling confirm slapid interaction")
 				slapid := strings.TrimPrefix(customID, "confirm_slapid_")
 				err = handleSteamIDConfirm(ctx, tx, b, i, slapid)
 			case customID == "new_team_registration_button":
-				b.Logger.Debug().Msg("Handling team registration button interaction")
 				err = handleNewTeamRegistrationButtonInteraction(ctx, tx, b, i)
 			case customID == "existing_team_registration_button":
-				b.Logger.Debug().Msg("Handling team registration button interaction")
 				err = handleExistingTeamRegistrationButtonInteraction(ctx, tx, b, i, &ack)
 			case strings.Contains(customID, "reregister_team_"):
-				b.Logger.Debug().Msg("Handling reregister team interaction")
 				teamid := strings.TrimPrefix(customID, "reregister_team_")
 				err = handleReregisterExistingTeamInteraction(ctx, tx, b, i, &ack, teamid)
 			case strings.Contains(customID, "disband_team_"):
-				b.Logger.Debug().Msg("Handling disband team interaction")
 				teamid := strings.TrimPrefix(customID, "disband_team_")
 				err = handleDisbandTeamInteraction(ctx, tx, b, i, &ack, teamid)
 			case customID == "reregister_select_team":
-				b.Logger.Debug().Msg("Handling reregister team select interaction")
 				err = handleReregisterTeamSelect(ctx, tx, b, i, &ack)
+			case customID == "freeagent_registration_button":
+				err = handleFreeAgentRegisterButton(ctx, tx, b, i, &ack)
+			case customID == "freeagent_registration_select_league":
+				err = handleFreeAgentRegisterSelectLeague(ctx, tx, b, i, &ack)
 			default:
 				err = errors.New("No handler for interaction")
 			}
@@ -69,27 +66,22 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 		} else if i.Type == discordgo.InteractionModalSubmit {
 			// Handle modal interactions
 			customID := i.ModalSubmitData().CustomID
+			b.Logger.Debug().Str("custom_id", customID).Msg("Handling interaction")
 			switch {
 			case customID == "player_reg_steam_id":
-				b.Logger.Debug().Msg("Handling submit steam ID interaction")
 				err = handleSteamIDModalSubmit(ctx, tx, b, i, &ack)
 			case strings.Contains(customID, "player_reg_display_name_"):
-				b.Logger.Debug().Msg("Handling submit display name interaction")
 				slapid := strings.TrimPrefix(customID, "player_reg_display_name_")
 				err = handleDisplayNameSubmit(ctx, tx, b, i, &ack, slapid)
 			case customID == "new_team_registration_details":
-				b.Logger.Debug().Msg("Handling submit new team details interaction")
 				err = handleNewTeamDetailsSubmit(ctx, tx, b, i, &ack)
 			default:
-				err = errors.New(fmt.Sprintf(
-					`No handler for interaction: "%s"`,
-					i.MessageComponentData().CustomID,
-				))
+				err = errors.New("No handler for interaction")
 			}
 		}
 		// start error handling for interaction handlers
 		if err != nil {
-			msg := "Failed to handle interaction in registration channel"
+			msg := "Failed to handle interaction"
 			b.TripleError(msg, err, i, ack)
 			return
 		}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gosl/internal/models"
 	"gosl/pkg/db"
+	"io"
 	"sync"
 	"time"
 
@@ -146,6 +147,16 @@ func (c *Channel) SendMessage(
 	return nil
 }
 
+// Sends a message with a file to the channel
+func (c *Channel) SendFile(message, filename string, file io.Reader) (*discordgo.Message, error) {
+	c.bot.pool.queue()
+	msg, err := c.bot.Session.ChannelFileSendWithMessage(c.ID, message, filename, file)
+	if err != nil {
+		return nil, errors.Wrap(err, "session.ChannelFileSendWithMessage")
+	}
+	return msg, nil
+}
+
 func (c *Channel) DeleteMessage(m *Message) {
 	err := c.bot.Session.ChannelMessageDelete(c.ID, m.ID)
 	if err != nil {
@@ -160,9 +171,9 @@ func (c *Channel) DeleteMessage(m *Message) {
 
 // Find an existing channel for the provided purpose and return the channel id
 func (c *Channel) findExisting(ctx context.Context) (string, error) {
-	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	tx, err := c.bot.Conn.RBegin(timeout)
+	tx, err := c.bot.Conn.RBegin(timeout, "Channel.findExisting: "+c.Label)
 	if err != nil {
 		return "", errors.Wrap(err, "conn.RBegin")
 	}
@@ -189,9 +200,9 @@ func (c *Channel) findExisting(ctx context.Context) (string, error) {
 }
 
 func (c *Channel) createNew(ctx context.Context) (string, error) {
-	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	tx, err := c.bot.Conn.Begin(timeout)
+	tx, err := c.bot.Conn.Begin(timeout, "Channel.createNew(): "+c.Label)
 	if err != nil {
 		return "", errors.Wrap(err, "conn.Begin")
 	}
@@ -233,7 +244,7 @@ func cleanupDeadChannels(
 	b.Logger.Debug().Msg("Removing dead channels from database")
 	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	tx, err := b.Conn.Begin(timeout)
+	tx, err := b.Conn.Begin(timeout, "cleanupDeadChannels")
 	if err != nil {
 		b.Logger.Warn().Err(err).Msg("Failed to cleanup dead channels")
 		return

@@ -23,9 +23,9 @@ func selectChannelsContents(
 	b *bot.Bot,
 ) (*bot.MessageContents, error) {
 	b.Logger.Debug().Msg("Setting up select channels message")
-	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	tx, err := b.Conn.RBegin(timeout)
+	tx, err := b.Conn.RBegin(timeout, "selectChannelsContents()")
 	if err != nil {
 		return nil, errors.Wrap(err, "conn.RBegin")
 	}
@@ -35,23 +35,56 @@ func selectChannelsContents(
 	if err != nil {
 		return nil, errors.Wrap(err, "models.GetChannel")
 	}
-	appChannelID, err := models.GetChannel(ctx, tx, models.ChannelRegistrationApproval)
+	teamAppChannelID, err := models.GetChannel(ctx, tx, models.ChannelTeamApplications)
+	if err != nil {
+		return nil, errors.Wrap(err, "models.GetChannel")
+	}
+	freeAgentAppChannelID, err := models.GetChannel(ctx, tx, models.ChannelFreeAgentApplications)
+	if err != nil {
+		return nil, errors.Wrap(err, "models.GetChannel")
+	}
+	teamRostersChannelID, err := models.GetChannel(ctx, tx, models.ChannelTeamRosters)
+	if err != nil {
+		return nil, errors.Wrap(err, "models.GetChannel")
+	}
+	transferApprovalsChannelID, err := models.GetChannel(ctx, tx, models.ChannelTransferApprovals)
 	if err != nil {
 		return nil, errors.Wrap(err, "models.GetChannel")
 	}
 	tx.Commit()
 
 	var registrationDefaults []discordgo.SelectMenuDefaultValue
+	var teamApplicationsDefaults []discordgo.SelectMenuDefaultValue
+	var freeAgentApplicationsDefaults []discordgo.SelectMenuDefaultValue
+	var teamRostersDefaults []discordgo.SelectMenuDefaultValue
+	var transferApprovalsDefaults []discordgo.SelectMenuDefaultValue
 	if regChannelID != "" {
 		registrationDefaults = append(registrationDefaults, discordgo.SelectMenuDefaultValue{
 			ID:   regChannelID,
 			Type: discordgo.SelectMenuDefaultValueChannel,
 		})
 	}
-	var applicationsDefaults []discordgo.SelectMenuDefaultValue
-	if appChannelID != "" {
-		applicationsDefaults = append(applicationsDefaults, discordgo.SelectMenuDefaultValue{
-			ID:   appChannelID,
+	if teamAppChannelID != "" {
+		teamApplicationsDefaults = append(teamApplicationsDefaults, discordgo.SelectMenuDefaultValue{
+			ID:   teamAppChannelID,
+			Type: discordgo.SelectMenuDefaultValueChannel,
+		})
+	}
+	if freeAgentAppChannelID != "" {
+		freeAgentApplicationsDefaults = append(freeAgentApplicationsDefaults, discordgo.SelectMenuDefaultValue{
+			ID:   freeAgentAppChannelID,
+			Type: discordgo.SelectMenuDefaultValueChannel,
+		})
+	}
+	if teamRostersChannelID != "" {
+		teamRostersDefaults = append(teamRostersDefaults, discordgo.SelectMenuDefaultValue{
+			ID:   teamRostersChannelID,
+			Type: discordgo.SelectMenuDefaultValueChannel,
+		})
+	}
+	if transferApprovalsChannelID != "" {
+		transferApprovalsDefaults = append(transferApprovalsDefaults, discordgo.SelectMenuDefaultValue{
+			ID:   transferApprovalsChannelID,
 			Type: discordgo.SelectMenuDefaultValueChannel,
 		})
 	}
@@ -61,8 +94,17 @@ func selectChannelsContents(
 **Player/Team/Free Agent Registrations:**
 Channel for players create teams and register to play in OSL
 
-**Team/Free Agent Applications:**
-Channel for viewing and actioning registration applications"
+**Team Applications:**
+Channel for viewing and actioning team applications"
+
+**Free Agent Applications:**
+Channel for viewing and actioning free agent applications"
+
+**Transfer Approvals:**
+Channel for viewing and actioning transfer applications"
+
+**Team Rosters:**
+Channel for viewing Team Rosters and Free Agents"
 `,
 		Color: 0x00ff00, // Green color
 	}
@@ -75,9 +117,33 @@ Channel for viewing and actioning registration applications"
 		[]discordgo.ChannelType{discordgo.ChannelTypeGuildText},
 	)
 	comps = append(comps, components.ChannelSelect(
-		"application_channel_select",
-		"Team/Free Agent Applications",
-		applicationsDefaults,
+		"team_application_channel_select",
+		"Team Applications",
+		teamApplicationsDefaults,
+		1,
+		1,
+		[]discordgo.ChannelType{discordgo.ChannelTypeGuildText},
+	)...)
+	comps = append(comps, components.ChannelSelect(
+		"freeagent_application_channel_select",
+		"Free Agent Applications",
+		freeAgentApplicationsDefaults,
+		1,
+		1,
+		[]discordgo.ChannelType{discordgo.ChannelTypeGuildText},
+	)...)
+	comps = append(comps, components.ChannelSelect(
+		"transfer_approval_channel_select",
+		"Transfer Approvals",
+		transferApprovalsDefaults,
+		1,
+		1,
+		[]discordgo.ChannelType{discordgo.ChannelTypeGuildText},
+	)...)
+	comps = append(comps, components.ChannelSelect(
+		"team_rosters_channel_select",
+		"Team/Free Agent Rosters",
+		teamRostersDefaults,
 		1,
 		1,
 		[]discordgo.ChannelType{discordgo.ChannelTypeGuildText},

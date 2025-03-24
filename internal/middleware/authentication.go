@@ -115,7 +115,7 @@ func Authentication(
 		}
 
 		// Start the transaction
-		tx, err := conn.Begin(ctx)
+		tx, err := conn.Begin(ctx, "Authentication middleware")
 		if err != nil {
 			// Failed to start transaction, skip auth
 			logger.Warn().Err(err).

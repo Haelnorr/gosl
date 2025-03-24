@@ -24,7 +24,7 @@ func TestSafeConn(t *testing.T) {
 	defer sconn.Close()
 
 	t.Run("Global lock waits for read locks to finish", func(t *testing.T) {
-		tx, err := sconn.Begin(t.Context())
+		tx, err := sconn.Begin(t.Context(), "TestSafeConn()")
 		require.NoError(t, err)
 		var requested sync.WaitGroup
 		var engaged sync.WaitGroup
@@ -45,7 +45,7 @@ func TestSafeConn(t *testing.T) {
 		sconn.Resume()
 	})
 	t.Run("Lock abandons after timeout", func(t *testing.T) {
-		tx, err := sconn.Begin(t.Context())
+		tx, err := sconn.Begin(t.Context(), "TestSafeConn()")
 		require.NoError(t, err)
 		sconn.Pause(250 * time.Millisecond)
 		assert.Equal(t, uint32(0), sconn.globalLockStatus)
@@ -56,12 +56,12 @@ func TestSafeConn(t *testing.T) {
 		sconn.Pause(250 * time.Millisecond)
 		ctx, cancel := context.WithTimeout(t.Context(), 250*time.Millisecond)
 		defer cancel()
-		_, err = sconn.Begin(ctx)
+		_, err = sconn.Begin(ctx, "TestSafeConn")
 		require.Error(t, err)
 		sconn.Resume()
 	})
 	t.Run("Pause blocks transactions and resume allows", func(t *testing.T) {
-		tx, err := sconn.Begin(t.Context())
+		tx, err := sconn.Begin(t.Context(), "TestSafeConn")
 		require.NoError(t, err)
 		var requested sync.WaitGroup
 		var engaged sync.WaitGroup
@@ -77,14 +77,14 @@ func TestSafeConn(t *testing.T) {
 		assert.Equal(t, uint32(1), sconn.globalLockRequested)
 		ctx, cancel := context.WithTimeout(t.Context(), 250*time.Millisecond)
 		defer cancel()
-		_, err = sconn.Begin(ctx)
+		_, err = sconn.Begin(ctx, "TestSafeConn")
 		require.Error(t, err)
 		tx.Commit()
 		engaged.Wait()
-		_, err = sconn.Begin(ctx)
+		_, err = sconn.Begin(ctx, "TestSafeConn")
 		require.Error(t, err)
 		sconn.Resume()
-		tx, err = sconn.Begin(t.Context())
+		tx, err = sconn.Begin(t.Context(), "TestSafeConn")
 		require.NoError(t, err)
 		tx.Commit()
 	})
@@ -101,25 +101,25 @@ func TestSafeTX(t *testing.T) {
 	defer sconn.Close()
 
 	t.Run("Commit releases lock", func(t *testing.T) {
-		tx, err := sconn.Begin(t.Context())
+		tx, err := sconn.Begin(t.Context(), "TestSafeConn")
 		require.NoError(t, err)
 		assert.Equal(t, uint32(1), sconn.readLockCount)
 		tx.Commit()
 		assert.Equal(t, uint32(0), sconn.readLockCount)
 	})
 	t.Run("Rollback releases lock", func(t *testing.T) {
-		tx, err := sconn.Begin(t.Context())
+		tx, err := sconn.Begin(t.Context(), "TestSafeConn")
 		require.NoError(t, err)
 		assert.Equal(t, uint32(1), sconn.readLockCount)
 		tx.Rollback()
 		assert.Equal(t, uint32(0), sconn.readLockCount)
 	})
 	t.Run("Multiple RTX can gain read lock", func(t *testing.T) {
-		tx1, err := sconn.RBegin(t.Context())
+		tx1, err := sconn.RBegin(t.Context(), "TestSafeConn")
 		require.NoError(t, err)
-		tx2, err := sconn.RBegin(t.Context())
+		tx2, err := sconn.RBegin(t.Context(), "TestSafeConn")
 		require.NoError(t, err)
-		tx3, err := sconn.RBegin(t.Context())
+		tx3, err := sconn.RBegin(t.Context(), "TestSafeConn")
 		require.NoError(t, err)
 		tx1.Commit()
 		tx2.Commit()
@@ -130,7 +130,7 @@ func TestSafeTX(t *testing.T) {
 		defer cancel()
 		sconn.acquireGlobalLock()
 		defer sconn.releaseGlobalLock()
-		_, err := sconn.Begin(ctx)
+		_, err := sconn.Begin(ctx, "TestSafeConn")
 		require.Error(t, err)
 	})
 	t.Run("Lock acquires if lock released", func(t *testing.T) {
@@ -140,7 +140,7 @@ func TestSafeTX(t *testing.T) {
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
-			tx, err := sconn.Begin(ctx)
+			tx, err := sconn.Begin(ctx, "TestSafeConn")
 			require.NoError(t, err)
 			tx.Commit()
 			wg.Done()

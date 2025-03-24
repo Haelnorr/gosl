@@ -1,4 +1,4 @@
-package registrationapprovalchannel
+package teamapplications
 
 import (
 	"context"

@@ -11,12 +11,10 @@ import (
 func reregisterTeamComponents(team *models.Team) *bot.MessageContents {
 	embed := &discordgo.MessageEmbed{
 		Color: team.Color,
-		// TODO: team logo
-		// USE FOR TEAM WITH LOGO SUBMITTED ALREADY
-		// Author: &discordgo.MessageEmbedAuthor{
-		// 	Name:    teamName,
-		// 	IconURL:.Avatar,
-		// },
+		Author: &discordgo.MessageEmbedAuthor{
+			Name:    fmt.Sprintf("%s (%s)", team.Name, team.Abbreviation),
+			IconURL: team.Logo,
+		},
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name: fmt.Sprintf("Currently manager of %s (%s)", team.Name, team.Abbreviation),

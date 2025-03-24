@@ -23,9 +23,9 @@ func selectRolesContents(
 	b *bot.Bot,
 ) (*bot.MessageContents, error) {
 	b.Logger.Debug().Msg("Setting up select roles message")
-	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	tx, err := b.Conn.Begin(timeout)
+	tx, err := b.Conn.Begin(timeout, "selectRolesContents()")
 	if err != nil {
 		return nil, errors.Wrap(err, "b.Conn.Begin")
 	}

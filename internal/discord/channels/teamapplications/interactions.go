@@ -1,4 +1,4 @@
-package registrationapprovalchannel
+package teamapplications
 
 import (
 	"context"
@@ -11,27 +11,27 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Handle the interactions for the registration channel components
+// Handle the interactions for the team applications channel
 func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
-	b.Logger.Debug().Msg("Adding handler for registration approval channel interactions")
+	b.Logger.Debug().Msg("Adding handler for team applications channel interactions")
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if i.Type == discordgo.InteractionApplicationCommand {
 			return
 		}
-		if i.Message.ChannelID != b.Channels[models.ChannelRegistrationApproval].ID {
+		if i.Message.ChannelID != b.Channels[models.ChannelTeamApplications].ID {
 			return
 		}
 		ack := false
-		timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+		timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
-		tx, err := b.Conn.Begin(timeout)
-		msg := "Failed to handle interaction in regsistration approval channel"
+		tx, err := b.Conn.Begin(timeout, "Team applications interaction handler")
+		msg := "Failed to handle interaction in team applications channel"
 		if err != nil {
 			b.TripleError(msg, err, i, ack)
 			return
 		}
 		defer tx.Rollback()
-		b.Logger.Debug().Msg("Handling regsistration approval channel interaction")
+		b.Logger.Debug().Msg("Handling team applications channel interaction")
 		isManager, err := models.MemberHasPermission(
 			ctx, tx, s, b.Config.DiscordGuildID, i.Member, models.PermLeagueManager)
 		if !isManager {
@@ -45,7 +45,7 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 			b.Logger.Debug().Str("custom_id", customID).Msg("Handling Interaction")
 			switch {
 			case strings.Contains(customID, "refresh_team_application_"):
-				applicationID := strings.TrimPrefix(customID, "approve_team_application_")
+				applicationID := strings.TrimPrefix(customID, "refresh_team_application_")
 				err = handleRefreshTeamApplication(ctx, tx, b, i, &ack, applicationID)
 			case strings.Contains(customID, "approve_team_application_"):
 				applicationID := strings.TrimPrefix(customID, "approve_team_application_")

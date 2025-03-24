@@ -22,9 +22,9 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 		}
 		ack := false
 		// setup the database transaction
-		timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+		timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
-		tx, err := b.Conn.Begin(timeout)
+		tx, err := b.Conn.Begin(timeout, "Manager channel interaction handler")
 		msg := "Failed to handle interaction in manager channel"
 		if err != nil {
 			b.TripleError(msg, err, i, ack)

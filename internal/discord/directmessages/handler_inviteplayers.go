@@ -3,6 +3,7 @@ package directmessages
 import (
 	"context"
 	"gosl/internal/discord/bot"
+	"gosl/internal/discord/channels/transferapprovals"
 	"gosl/internal/models"
 	"gosl/pkg/db"
 	"strings"
@@ -27,6 +28,14 @@ func handleInvitePlayersInteraction(
 			return nil
 		}
 		return errors.Wrap(err, "checkPlayerIsManager")
+	}
+	now := time.Now()
+	currentPlayers, err := team.Players(ctx, tx, &now, &now)
+	if err != nil {
+		return errors.Wrap(err, "team.Players")
+	}
+	if len(*currentPlayers) == 5 {
+		return b.Error("Cannot invite new players", "Team is at max capacity", i, *ack)
 	}
 
 	contents, err := invitePlayersComponents(ctx, tx, team, i.Message.ID)
@@ -83,13 +92,29 @@ func handleInviteSelectedPlayersInteraction(
 		if err != nil {
 			return errors.Wrap(err, "TeamInviteComponents")
 		}
+		if invite.Approved == nil {
+			transferChan := b.Channels[models.ChannelTransferApprovals]
+			if transferChan.ID == "" {
+				return errors.New("Transfer Approvals channel not configured")
+			}
+			transferMsg, err := transferapprovals.NewTransferRequestMsg(ctx, b)
+			if err != nil {
+				return errors.Wrap(err, "transferapprovals.NewTransferRequestMsg")
+			}
+			contents, err := transferapprovals.TransferRequestContents(ctx, tx, invite)
+			if err != nil {
+				return errors.Wrap(err, "transferapprovals.TransferRequestContents")
+			}
+			err = transferMsg.Send(contents)
+			if err != nil {
+				return errors.Wrap(err, "transferMsg.Send")
+			}
+		}
 		err = invMsg.Send(contents)
 		if err != nil {
 			return errors.Wrap(err, "invMsg.Send")
 		}
-		// TODO: if invite needs approval, send to staff panel
 	}
-
 	updateTeamManagerPanel(ctx, tx, b, team, panelMsgID, i.User.ID)
 
 	err = b.FollowUp("Players invited", i)

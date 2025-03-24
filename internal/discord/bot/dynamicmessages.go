@@ -89,10 +89,7 @@ func (dy *DynamicMessage) Expire(contents *MessageContents) error {
 	return nil
 }
 
-func (dy *DynamicMessage) Delete(
-	embed *discordgo.MessageEmbed,
-	comps []discordgo.MessageComponent,
-) error {
+func (dy *DynamicMessage) Delete(contents *MessageContents) error {
 	err := dy.b.Session.ChannelMessageDelete(dy.ChannelID, dy.ID)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("session.ChannelMessageDelete (%s)", dy.Label))

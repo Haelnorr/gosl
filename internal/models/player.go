@@ -164,8 +164,11 @@ func (p *Player) CurrentTeam(
 	tx db.SafeTX,
 ) (*PlayerTeam, error) {
 	query := `
-SELECT team_id, joined, left FROM player_team 
-WHERE player_id = ? AND joined < ? AND left IS NULL;`
+SELECT pt.team_id, t.name, pt.player_id, p.name, t.manager_id, pt.joined, pt.left
+FROM player_team pt
+JOIN team t ON pt.team_id = t.id
+JOIN player p ON pt.player_id = p.id
+WHERE pt.player_id = ? AND pt.joined < ? AND pt.left IS NULL;`
 	now := time.Now()
 	row, err := tx.QueryRow(ctx, query, p.ID, formatISO8601(&now))
 	if err != nil {
@@ -174,14 +177,14 @@ WHERE player_id = ? AND joined < ? AND left IS NULL;`
 	var team PlayerTeam
 	var joined string
 	var left sql.NullString
-	err = row.Scan(&team.TeamID, &joined, &left)
+	err = row.Scan(&team.TeamID, &team.TeamName, &team.PlayerID, &team.PlayerName,
+		&team.ManagerID, &joined, &left)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, errors.Wrap(err, "row.Scan")
 	}
-	team.PlayerID = p.ID
 	joinedParsed := parseISO8601(&joined)
 	team.Joined = *joinedParsed
 	if left.Valid {

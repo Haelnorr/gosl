@@ -83,7 +83,7 @@ func (i *PlayerTeamInvite) Approve(ctx context.Context, tx *db.SafeWTX) error {
 		return errors.Wrap(err, "tx.Exec")
 	}
 	approved := uint16(1)
-	i.Status = &approved
+	i.Approved = &approved
 	return nil
 }
 
@@ -105,6 +105,6 @@ func (i *PlayerTeamInvite) Deny(ctx context.Context, tx *db.SafeWTX) error {
 		return errors.Wrap(err, "tx.Exec")
 	}
 	approved := uint16(0)
-	i.Status = &approved
+	i.Approved = &approved
 	return nil
 }

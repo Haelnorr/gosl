@@ -8,6 +8,7 @@ import (
 	"gosl/internal/models"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -47,13 +48,14 @@ func handleUploadLogs(
 ) bot.Handler {
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		b.Acknowledge(i, nil)
-		timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+		timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
-		tx, err := b.Conn.Begin(timeout)
+		tx, err := b.Conn.Begin(timeout, "Handle /uploadlogs command")
 		if err != nil {
 			b.TripleError("Log upload failed", err, i, true)
 			return
 		}
+		defer tx.Rollback()
 		member := i.Member
 		if member == nil {
 			member, err = s.GuildMember(b.Config.DiscordGuildID, i.User.ID)
@@ -78,6 +80,13 @@ func handleUploadLogs(
 		logs := []*gamelogs.Gamelog{}
 
 		for _, attachment := range attachments {
+			if strings.Contains(attachment.ContentType, "application/json") {
+				err = b.Error("Logs upload failed", "This attachment is not a JSON", i, true)
+				if err != nil {
+					b.Logger.Error().Err(err).Msg("Failed to notify user of validation error")
+				}
+				return
+			}
 			// TODO: make this concurrent
 			resp, err := http.Get(attachment.URL)
 			if err != nil {
@@ -105,6 +114,7 @@ func handleUploadLogs(
 
 		// TODO: actually do something with the log data
 
+		tx.Commit()
 		err = b.FollowUp("Log files uploaded", i)
 		if err != nil {
 			b.Logger.Error().Err(err).Msg("Failed to reply to interaction")

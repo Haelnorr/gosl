@@ -37,6 +37,7 @@ func Setup(
 	var errs []error
 	errs = append(errs, channel.RegisterMessage(playerRegistration))
 	errs = append(errs, channel.RegisterMessage(teamRegistration))
+	errs = append(errs, channel.RegisterMessage(freeagentRegistration))
 
 	// check for any errors setting up messages and return if any occured
 	hadErr := false

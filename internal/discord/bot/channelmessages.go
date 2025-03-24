@@ -37,9 +37,9 @@ func (m *Message) Setup(ctx context.Context, wg *sync.WaitGroup, errch chan erro
 	defer wg.Done()
 
 	// DB setup
-	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	tx, err := m.bot.Conn.RBegin(timeout)
+	tx, err := m.bot.Conn.RBegin(timeout, "Message.Setup(): "+m.Label)
 	if err != nil {
 		errch <- errors.Wrap(err, "conn.RBegin")
 		return
@@ -160,9 +160,9 @@ func (m *Message) SendNew(ctx context.Context, errch chan error) {
 		errch <- errors.Wrap(err, "session.ChannelMessageEditComplex")
 		return
 	}
-	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	tx, err := m.bot.Conn.Begin(timeout)
+	tx, err := m.bot.Conn.Begin(timeout, "Message.SendNew(): "+m.Label)
 	if err != nil {
 		errch <- errors.Wrap(err, "conn.Begin")
 		return

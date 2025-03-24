@@ -20,11 +20,6 @@ func TeamInviteComponents(
 		inviteID = invite.ID
 	}
 	embed := &discordgo.MessageEmbed{
-		// USE FOR TEAM WITH LOGO SUBMITTED ALREADY
-		// Author: &discordgo.MessageEmbedAuthor{
-		// 	Name:    teamName,
-		// 	IconURL:.Avatar,
-		// },
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "Invite to team",

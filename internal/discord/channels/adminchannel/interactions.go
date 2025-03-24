@@ -22,9 +22,9 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 		}
 		ack := false
 		if i.Type == discordgo.InteractionMessageComponent {
-			timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+			timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 			defer cancel()
-			tx, err := b.Conn.Begin(timeout)
+			tx, err := b.Conn.Begin(timeout, "Admin channel interaction handler")
 			msg := "Failed to handle interaction in admin channel"
 			if err != nil {
 				b.TripleError(msg, err, i, ack)
@@ -44,15 +44,21 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 			b.Logger.Debug().Str("custom_id", customID).Msg("Handling interaction")
 			switch customID {
 			case "log_channel_select":
-				err = handleSelectLogChannelInteraction(ctx, tx, b, i, &ack)
+				err = handleSelectChannelInteraction(ctx, tx, b, i, &ack, models.ChannelLog)
 			case "admin_role_select":
 				err = handleSelectAdminRolesInteraction(ctx, tx, b, i, &ack)
 			case "manager_role_select":
 				err = handleSelectManagerRolesInteraction(ctx, tx, b, i, &ack)
 			case "registration_channel_select":
-				err = handleSelectRegistrationChannelInteraction(ctx, tx, b, i, &ack)
-			case "application_channel_select":
-				err = handleSelectRegistrationApprovalChannelInteraction(ctx, tx, b, i, &ack)
+				err = handleSelectChannelInteraction(ctx, tx, b, i, &ack, models.ChannelRegistration)
+			case "team_application_channel_select":
+				err = handleSelectChannelInteraction(ctx, tx, b, i, &ack, models.ChannelTeamApplications)
+			case "team_rosters_channel_select":
+				err = handleSelectChannelInteraction(ctx, tx, b, i, &ack, models.ChannelTeamRosters)
+			case "freeagent_application_channel_select":
+				err = handleSelectChannelInteraction(ctx, tx, b, i, &ack, models.ChannelFreeAgentApplications)
+			case "transfer_approval_channel_select":
+				err = handleSelectChannelInteraction(ctx, tx, b, i, &ack, models.ChannelTransferApprovals)
 			default:
 				err = errors.New("No handler for interaction")
 			}

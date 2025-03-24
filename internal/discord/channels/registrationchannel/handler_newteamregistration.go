@@ -63,24 +63,20 @@ func handleNewTeamDetailsSubmit(
 	teamAbbr := i.ModalSubmitData().Components[1].(*discordgo.ActionsRow).
 		Components[0].(*discordgo.TextInput).Value
 
-	team, err := models.GetTeamByName(ctx, tx, teamName)
+	nameTaken, err := models.CheckTeamNameExists(ctx, tx, teamName)
 	if err != nil {
 		return errors.Wrap(err, "models.GetTeamByName")
 	}
+	abbrTaken, err := models.CheckTeamAbbrExists(ctx, tx, teamAbbr)
+	if err != nil {
+		return errors.Wrap(err, "models.GetTeamByAbbr")
+	}
 	msg := ""
-	if team != nil {
-		msg = fmt.Sprintf("Team name '%s' is taken", team.Name)
-		if team.Abbreviation == teamAbbr {
-			msg = fmt.Sprintf("%s\nTeam abbreviation '%s' is taken", msg, team.Abbreviation)
-		}
-	} else {
-		team, err = models.GetTeamByAbbr(ctx, tx, teamAbbr)
-		if err != nil {
-			return errors.Wrap(err, "models.GetTeamByAbbr")
-		}
-		if team != nil {
-			msg = fmt.Sprintf("Team abbreviation '%s' is taken", team.Abbreviation)
-		}
+	if nameTaken {
+		msg = fmt.Sprintf("Team name '%s' is taken\n", teamName)
+	}
+	if abbrTaken {
+		msg = msg + fmt.Sprintf("Team abbreviation '%s' is taken", teamAbbr)
 	}
 	if msg != "" {
 		b.Error("Cannot create team", msg, i, true)
@@ -91,7 +87,7 @@ func handleNewTeamDetailsSubmit(
 	if err != nil {
 		return errors.Wrap(err, "models.GetPlayerByDiscordID")
 	}
-	team, err = models.CreateTeam(ctx, tx, teamName, teamAbbr, player.ID)
+	team, err := models.CreateTeam(ctx, tx, teamName, teamAbbr, player.ID)
 	if err != nil {
 		return errors.Wrap(err, "models.CreateTeam")
 	}

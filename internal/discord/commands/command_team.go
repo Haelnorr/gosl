@@ -25,9 +25,9 @@ func handleTeam(
 ) bot.Handler {
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		b.Acknowledge(i, nil)
-		timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+		timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
-		tx, err := b.Conn.RBegin(timeout)
+		tx, err := b.Conn.RBegin(timeout, "Handle /team command")
 		if err != nil {
 			b.TripleError("Unexpected error", err, i, true)
 			return

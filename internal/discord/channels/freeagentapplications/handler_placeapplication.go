@@ -1,9 +1,10 @@
-package registrationapprovalchannel
+package freeagentapplications
 
 import (
 	"context"
 	"fmt"
 	"gosl/internal/discord/bot"
+	"gosl/internal/discord/channels/teamrosters"
 	"gosl/internal/models"
 	"gosl/pkg/db"
 	"strconv"
@@ -13,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func handlePlaceTeamLeagueSelect(
+func handlePlaceFreeAgentLeagueSelect(
 	ctx context.Context,
 	tx *db.SafeWTX,
 	b *bot.Bot,
@@ -26,14 +27,13 @@ func handlePlaceTeamLeagueSelect(
 	if err != nil {
 		return errors.Wrap(err, "strconv.ParseUint")
 	}
-	app, err := models.GetTeamRegistration(ctx, tx, uint16(appID))
+	app, err := models.GetFreeAgentRegistration(ctx, tx, uint32(appID))
 	if err != nil {
-		return errors.Wrap(err, "models.GetTeamRegistration")
+		return errors.Wrap(err, "models.GetFreeAgentRegistration")
 	}
 	if app.Approved == nil || *app.Approved == 0 {
-		return b.Error("Failed to place team", "Application is not approved", i, *ack)
+		return b.Error("Failed to place free agent", "Application is not approved", i, *ack)
 	}
-
 	leagueIDstr := i.MessageComponentData().Values[0]
 	leagueID, err := strconv.ParseUint(leagueIDstr, 10, 0)
 	if err != nil {
@@ -43,22 +43,28 @@ func handlePlaceTeamLeagueSelect(
 	err = app.Place(ctx, tx, uint16(leagueID))
 	if err != nil {
 		if strings.Contains(err.Error(), "VE:") {
-			return b.Error("Failed to place team",
+			return b.Error("Failed to place free agent",
 				strings.TrimPrefix(err.Error(), "VE:"), i, *ack)
 		}
 		return errors.Wrap(err, "app.Place")
 	}
-
 	msg := fmt.Sprintf("%s has been placed in %s for %s",
-		app.TeamName, app.PlacedLeagueName, app.SeasonName)
+		app.PlayerName, app.PlacedLeagueName, app.SeasonName)
 
-	err = b.SendDirectMessage("Team Application Approved", msg, app.ManagerID)
+	player, err := models.GetPlayerByID(ctx, tx, app.PlayerID)
+	if err != nil {
+		return errors.Wrap(err, "models.GetPlayerByID")
+	}
+	err = b.SendDirectMessage("Free Agent Application Approved", msg, player.DiscordID)
 	if err != nil {
 		return errors.Wrap(err, "b.SendDirectMessage")
 	}
-	// TODO: update team rosters channel
+	err = teamrosters.UpdateTeamRosters(ctx, b)
+	if err != nil {
+		return errors.Wrap(err, "teamrosters.UpdateTeamRosters")
+	}
 
-	err = updateAppMsg(ctx, tx, b, i, app, false)
+	err = updateAppMsg(ctx, tx, b, i, app, true)
 	if err != nil {
 		return errors.Wrap(err, "updateAppMsg")
 	}

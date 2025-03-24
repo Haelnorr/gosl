@@ -17,67 +17,59 @@ type Team struct {
 	Abbreviation string // unique abbreviation of team name
 	Name         string // unique team name
 	ManagerID    uint16 // FK -> Player.ID
+	ManagerName  string // from Player.Name
 	Color        int    // colour hex
+	Logo         string // logo URL from team_logo table
 }
 
-func GetTeamByName(
+func CheckTeamNameExists(
 	ctx context.Context,
 	tx db.SafeTX,
 	name string,
-) (*Team, error) {
+) (bool, error) {
 	query := `
-SELECT id, abbreviation, name, manager_id, color 
-FROM team WHERE name = ? COLLATE NOCASE;`
+SELECT EXISTS (
+    SELECT 1 FROM team WHERE name = ? COLLATE NOCASE
+);`
 	row, err := tx.QueryRow(ctx, query, name)
 	if err != nil {
-		return nil, errors.Wrap(err, "tx.QueryRow")
+		return false, errors.Wrap(err, "tx.QueryRow")
 	}
-	var team Team
-	var color string
-	err = row.Scan(&team.ID, &team.Abbreviation, &team.Name, &team.ManagerID, &color)
+	var exists int
+	err = row.Scan(&exists)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, errors.Wrap(err, "row.Scan")
+		return false, errors.Wrap(err, "row.Scan")
 	}
-	colorint, err := hexToInt(color)
-	if err != nil {
-		team.Color = 0x181825
+	if exists == 1 {
+		return true, nil
 	} else {
-		team.Color = colorint
+		return false, nil
 	}
-	return &team, nil
 }
 
-func GetTeamByAbbr(
+func CheckTeamAbbrExists(
 	ctx context.Context,
 	tx db.SafeTX,
 	abbr string,
-) (*Team, error) {
+) (bool, error) {
 	query := `
-SELECT id, abbreviation, name, manager_id, color 
-FROM team WHERE abbreviation = ? COLLATE NOCASE;`
+SELECT EXISTS (
+    SELECT 1 FROM team WHERE abbreviation = ? COLLATE NOCASE
+);`
 	row, err := tx.QueryRow(ctx, query, abbr)
 	if err != nil {
-		return nil, errors.Wrap(err, "tx.QueryRow")
+		return false, errors.Wrap(err, "tx.QueryRow")
 	}
-	var team Team
-	var color string
-	err = row.Scan(&team.ID, &team.Abbreviation, &team.Name, &team.ManagerID, &color)
+	var exists int
+	err = row.Scan(&exists)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, errors.Wrap(err, "row.Scan")
+		return false, errors.Wrap(err, "row.Scan")
 	}
-	colorint, err := hexToInt(color)
-	if err != nil {
-		team.Color = 0x181825
+	if exists == 1 {
+		return true, nil
 	} else {
-		team.Color = colorint
+		return false, nil
 	}
-	return &team, nil
 }
 
 func GetTeamByID(
@@ -86,15 +78,25 @@ func GetTeamByID(
 	id uint16,
 ) (*Team, error) {
 	query := `
-SELECT id, abbreviation, name, manager_id, color 
-FROM team WHERE id = ?;`
+SELECT t.id, t.abbreviation, t.name, t.manager_id, p.name, t.color, tl.url
+FROM team t
+JOIN player p ON t.manager_id = p.id
+LEFT JOIN team_logo tl ON tl.team_id = t.id
+    AND tl.uploaded = (
+        SELECT MAX(uploaded)
+        FROM team_logo
+        WHERE team_logo.team_id = t.id
+    )
+WHERE t.id = ?;`
 	row, err := tx.QueryRow(ctx, query, id)
 	if err != nil {
 		return nil, errors.Wrap(err, "tx.QueryRow")
 	}
 	var team Team
 	var color string
-	err = row.Scan(&team.ID, &team.Abbreviation, &team.Name, &team.ManagerID, &color)
+	var logo sql.NullString
+	err = row.Scan(&team.ID, &team.Abbreviation, &team.Name,
+		&team.ManagerID, &team.ManagerName, &color, &logo)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -106,6 +108,9 @@ FROM team WHERE id = ?;`
 		team.Color = 0x181825
 	} else {
 		team.Color = colorint
+	}
+	if logo.Valid {
+		team.Logo = logo.String
 	}
 	return &team, nil
 }
@@ -317,9 +322,13 @@ func (t *Team) RegistrationStatus(
 	tx db.SafeTX,
 ) (*TeamRegistration, error) {
 	query := `
-SELECT tr.id, tr.team_id, tr.season_id, s.name, tr.preferred_league, tr.approved, tr.placed
+SELECT tr.id, t.id, t.name, p.discord_id, s.id, s.name, tr.preferred_league,
+    tr.approved, tr.placed, l.division
 FROM team_registration tr
+JOIN team t ON tr.team_id = t.id
 JOIN season s ON tr.season_id = s.id
+JOIN player p ON t.manager_id = p.id
+LEFT JOIN league l ON tr.placed = l.id
 WHERE team_id = ? AND s.active = 1
 AND (tr.approved IS NULL OR tr.approved = 1);
 `
@@ -327,16 +336,20 @@ AND (tr.approved IS NULL OR tr.approved = 1);
 	if err != nil {
 		return nil, errors.Wrap(err, "tx.QueryRow")
 	}
-	var teamreg TeamRegistration
+	var tr TeamRegistration
 	var approved sql.NullInt16
+	var league sql.NullString
 	err = row.Scan(
-		&teamreg.ID,
-		&teamreg.TeamID,
-		&teamreg.SeasonID,
-		&teamreg.SeasonName,
-		&teamreg.PreferredLeague,
+		&tr.ID,
+		&tr.TeamID,
+		&tr.TeamName,
+		&tr.ManagerID,
+		&tr.SeasonID,
+		&tr.SeasonName,
+		&tr.PreferredLeague,
 		&approved,
-		&teamreg.Placed,
+		&tr.Placed,
+		&league,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -346,9 +359,14 @@ AND (tr.approved IS NULL OR tr.approved = 1);
 	}
 	if approved.Valid {
 		appr := uint16(approved.Int16)
-		teamreg.Approved = &appr
+		tr.Approved = &appr
 	}
-	return &teamreg, nil
+	if league.Valid {
+		tr.PlacedLeagueName = league.String
+	} else {
+		tr.PlacedLeagueName = "Not yet placed"
+	}
+	return &tr, nil
 }
 
 func (t *Team) GetManager(ctx context.Context, tx db.SafeTX) (*Player, error) {

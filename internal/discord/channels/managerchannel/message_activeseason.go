@@ -24,10 +24,10 @@ func activeSeasonComponents(
 	b *bot.Bot,
 ) (*bot.MessageContents, error) {
 	b.Logger.Debug().Msg("Setting up active season components")
-	timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	tx, err := b.Conn.RBegin(timeout)
+	tx, err := b.Conn.RBegin(timeout, "activeSeasonComponents()")
 	if err != nil {
 		return nil, errors.Wrap(err, "b.Conn.RBegin")
 	}

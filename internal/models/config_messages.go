@@ -10,18 +10,31 @@ import (
 
 const (
 	// Admin channel messages
-	MsgSelectLogChannel uint16 = 1 // select log channel component
-	MsgSelectRoles      uint16 = 2 // select manager roles component
-	MsgSelectChannels   uint16 = 3 // select registration channel component
+	MsgSelectLogChannel uint16 = 1 // select log channel message
+	MsgSelectRoles      uint16 = 2 // select manager roles message
+	MsgSelectChannels   uint16 = 3 // select registration channel message
 
 	// Manager channel messages
-	MsgSelectSeason uint16 = 11 // select season component
-	MsgCreateSeason uint16 = 12 // create season component
-	MsgActiveSeason uint16 = 13 // active season component
+	MsgSelectSeason uint16 = 11 // select season message
+	MsgCreateSeason uint16 = 12 // create season message
+	MsgActiveSeason uint16 = 13 // active season message
 
 	// Registration channel messages
-	MsgPlayerRegistration uint16 = 21 // player registration component
-	MsgTeamRegistration   uint16 = 22 // team registration component
+	MsgPlayerRegistration    uint16 = 21 // player registration message
+	MsgTeamRegistration      uint16 = 22 // team registration message
+	MsgFreeAgentRegistration uint16 = 23 // free agent registration message
+
+	// Team applications channel messages
+	MsgTeamAppsInfo uint16 = 31 // team applications channel information
+
+	// Team Rosters channel messages
+	MsgTeamRosters uint16 = 41 // team and free agent rosters for the current season
+
+	// Transfer Approvals Channel messages
+	MsgTransferApprovalsInfo uint16 = 51 // transfer approvals channel information
+
+	// Free agent applications channel messages
+	MsgFreeAgentAppsInfo uint16 = 61 // free agent applications channel information
 )
 
 // Set the provided message as the message used for the provided purpose

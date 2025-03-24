@@ -22,6 +22,7 @@ func getCommands(ctx context.Context, b *bot.Bot) []*Command {
 	return []*Command{
 		cmdUploadLogs(ctx, b),
 		cmdTeam(ctx, b),
+		cmdUploadLogo(ctx, b),
 	}
 }
 

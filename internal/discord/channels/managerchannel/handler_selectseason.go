@@ -30,7 +30,17 @@ func handleSelectSeasonInteraction(
 	if err != nil {
 		return errors.Wrap(err, "b.GetMessage")
 	}
+	freeAgentRegistration, err := b.GetMessage(models.ChannelRegistration, models.MsgFreeAgentRegistration)
+	if err != nil {
+		return errors.Wrap(err, "b.GetMessage")
+	}
+	teamRosters, err := b.GetMessage(models.ChannelTeamRosters, models.MsgTeamRosters)
+	if err != nil {
+		return errors.Wrap(err, "b.GetMessage")
+	}
 	teamRegistration.StartUpdate(false)
+	freeAgentRegistration.StartUpdate(false)
+	teamRosters.StartUpdate(false)
 	if !msgSelectSeason.StartUpdate(false) || !msgActiveSeason.StartUpdate(false) {
 		b.Error("Slow down!", "An update is in progress, please try again", i, true)
 		return nil
@@ -55,6 +65,8 @@ func handleSelectSeasonInteraction(
 		go msgSelectSeason.Update(ctx, errch)
 		go msgActiveSeason.Update(ctx, errch)
 		go teamRegistration.Update(ctx, errch)
+		go freeAgentRegistration.Update(ctx, errch)
+		go teamRosters.Update(ctx, errch)
 		for err := range errch {
 			if err != nil {
 				msg := "Failed to update message after interaction"

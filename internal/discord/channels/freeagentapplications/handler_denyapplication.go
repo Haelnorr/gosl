@@ -1,4 +1,4 @@
-package registrationapprovalchannel
+package freeagentapplications
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func handleRejectTeamApplication(
+func handleRejectFreeAgentApplication(
 	ctx context.Context,
 	tx *db.SafeWTX,
 	b *bot.Bot,
@@ -25,19 +25,22 @@ func handleRejectTeamApplication(
 	if err != nil {
 		return errors.Wrap(err, "strconv.ParseUint")
 	}
-	app, err := models.GetTeamRegistration(ctx, tx, uint16(appID))
+	app, err := models.GetFreeAgentRegistration(ctx, tx, uint32(appID))
 	if err != nil {
-		return errors.Wrap(err, "models.GetTeamRegistration")
+		return errors.Wrap(err, "models.GetFreeAgentRegistration")
 	}
-
 	err = app.Reject(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "app.Reject")
 	}
-	err = b.SendDirectMessage("Team Application Rejected",
-		fmt.Sprintf("Your application for %s to play in %s has been rejected",
-			app.TeamName, app.SeasonName),
-		app.ManagerID,
+	player, err := models.GetPlayerByID(ctx, tx, app.PlayerID)
+	if err != nil {
+		return errors.Wrap(err, "models.GetPlayerByID")
+	}
+	err = b.SendDirectMessage("Free Agent Application Rejected",
+		fmt.Sprintf("Your application to play in %s as a Free Agent has been rejected",
+			app.SeasonName),
+		player.DiscordID,
 	)
 	if err != nil {
 		return errors.Wrap(err, "b.SendDirectMessage")
@@ -47,7 +50,7 @@ func handleRejectTeamApplication(
 	if err != nil {
 		return errors.Wrap(err, "updateAppMsg")
 	}
-	msg := fmt.Sprintf("Application from %s rejected", app.TeamName)
+	msg := fmt.Sprintf("Application from %s rejected", app.PlayerName)
 	b.Log().UserEvent(i.Member, msg)
 	return b.FollowUp(msg, i)
 }

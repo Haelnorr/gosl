@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gosl/internal/discord/bot"
-	"gosl/internal/discord/channels/registrationapprovalchannel"
+	"gosl/internal/discord/channels/teamapplications"
 	"gosl/internal/models"
 	"gosl/pkg/db"
 	"strings"
@@ -30,7 +30,7 @@ func handleRegisterTeamButton(
 		}
 		return errors.Wrap(err, "checkPlayerIsManager")
 	}
-	season, err := checkRegistrationEligibility(ctx, tx, team)
+	season, err := checkRegistrationEligibility(ctx, tx, b, team)
 	if err != nil {
 		if strings.Contains(err.Error(), "RF:") {
 			return b.Error("Registration Failed", strings.TrimPrefix(err.Error(), "RF:"), i, *ack)
@@ -64,7 +64,7 @@ func handleRegisterTeamSelectLeague(
 		}
 		return errors.Wrap(err, "checkPlayerIsManager")
 	}
-	season, err := checkRegistrationEligibility(ctx, tx, team)
+	season, err := checkRegistrationEligibility(ctx, tx, b, team)
 	if err != nil {
 		if strings.Contains(err.Error(), "RF:") {
 			return b.Error("Registration Failed", strings.TrimPrefix(err.Error(), "RF:"), i, *ack)
@@ -77,13 +77,13 @@ func handleRegisterTeamSelectLeague(
 		return errors.Wrap(err, "team.Register")
 	}
 
-	regMsg, err := registrationapprovalchannel.NewTeamApplicationMsg(ctx, b)
+	regMsg, err := teamapplications.NewTeamApplicationMsg(ctx, b)
 	if err != nil {
 		return errors.Wrap(err, "NewTeamApplicationMsg")
 	}
-	contents, err := registrationapprovalchannel.TeamApplicationContents(ctx, tx, tr)
+	contents, err := teamapplications.TeamApplicationContents(ctx, tx, tr)
 	if err != nil {
-		return errors.Wrap(err, "registrationapprovalchannel.TeamApplicationContents(ctx, tx, tr)")
+		return errors.Wrap(err, "TeamApplicationContents")
 	}
 	err = regMsg.Send(contents)
 	if err != nil {
@@ -101,6 +101,7 @@ func handleRegisterTeamSelectLeague(
 func checkRegistrationEligibility(
 	ctx context.Context,
 	tx db.SafeTX,
+	b *bot.Bot,
 	team *models.Team,
 ) (*models.Season, error) {
 	season, err := models.GetActiveSeason(ctx, tx)
@@ -128,6 +129,12 @@ func checkRegistrationEligibility(
 	if team.Color == 0x181825 {
 		return nil, errors.New("RF:Team Color not set")
 	}
-	// TODO: check logo
+	if team.Logo == "" {
+		return nil, errors.New("RF:Team Logo not uploaded")
+	}
+	chanRegApp := b.Channels[models.ChannelTeamApplications]
+	if chanRegApp.ID == "" {
+		return nil, errors.New("Registration approvals channel not configured")
+	}
 	return season, nil
 }

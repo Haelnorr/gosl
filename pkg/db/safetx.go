@@ -18,13 +18,15 @@ type SafeTX interface {
 
 // Extends sql.Tx for use with SafeConn
 type SafeWTX struct {
-	tx *sql.Tx
-	sc *SafeConn
+	tx    *sql.Tx
+	sc    *SafeConn
+	label string
 }
 
 type SafeRTX struct {
-	tx *sql.Tx
-	sc *SafeConn
+	tx    *sql.Tx
+	sc    *SafeConn
+	label string
 }
 
 func isWriteOperation(query string) bool {
@@ -126,7 +128,7 @@ func (stx *SafeRTX) Commit() error {
 	}
 	err := stx.tx.Commit()
 	stx.tx = nil
-	stx.sc.releaseReadLock()
+	stx.sc.releaseReadLock(stx.label)
 	return err
 }
 
@@ -137,7 +139,7 @@ func (stx *SafeWTX) Commit() error {
 	}
 	err := stx.tx.Commit()
 	stx.tx = nil
-	stx.sc.releaseReadLock()
+	stx.sc.releaseReadLock(stx.label)
 	return err
 }
 
@@ -148,7 +150,7 @@ func (stx *SafeRTX) Rollback() error {
 	}
 	err := stx.tx.Rollback()
 	stx.tx = nil
-	stx.sc.releaseReadLock()
+	stx.sc.releaseReadLock(stx.label)
 	return err
 }
 
@@ -159,6 +161,6 @@ func (stx *SafeWTX) Rollback() error {
 	}
 	err := stx.tx.Rollback()
 	stx.tx = nil
-	stx.sc.releaseReadLock()
+	stx.sc.releaseReadLock(stx.label)
 	return err
 }

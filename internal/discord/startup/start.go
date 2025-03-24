@@ -4,10 +4,14 @@ import (
 	"context"
 	"gosl/internal/discord/bot"
 	"gosl/internal/discord/channels/adminchannel"
+	"gosl/internal/discord/channels/freeagentapplications"
 	"gosl/internal/discord/channels/loggingchannel"
 	"gosl/internal/discord/channels/managerchannel"
-	"gosl/internal/discord/channels/registrationapprovalchannel"
 	"gosl/internal/discord/channels/registrationchannel"
+	"gosl/internal/discord/channels/teamapplications"
+	"gosl/internal/discord/channels/teamlogos"
+	"gosl/internal/discord/channels/teamrosters"
+	"gosl/internal/discord/channels/transferapprovals"
 	"gosl/internal/discord/commands"
 	"gosl/internal/discord/directmessages"
 	"gosl/internal/models"
@@ -44,7 +48,11 @@ func Start(ctx context.Context, b *bot.Bot) error {
 		adminchannel.Setup,
 		managerchannel.Setup,
 		registrationchannel.Setup,
-		registrationapprovalchannel.Setup,
+		teamapplications.Setup,
+		freeagentapplications.Setup,
+		teamrosters.Setup,
+		transferapprovals.Setup,
+		teamlogos.Setup,
 	}
 
 	// Run all the setup commands

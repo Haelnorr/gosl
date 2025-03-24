@@ -20,9 +20,9 @@ func HandleDMInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 			return
 		}
 		ack := false
-		timeout, cancel := context.WithTimeout(ctx, 3*time.Second)
+		timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
-		tx, err := b.Conn.Begin(timeout)
+		tx, err := b.Conn.Begin(timeout, "DM interactions handler")
 		msg := "Failed to handle interaction in direct messages"
 		if err != nil {
 			b.TripleError(msg, err, i, ack)
@@ -74,6 +74,13 @@ func HandleDMInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 				inviteID := args[0]
 				panelMsgID := args[1]
 				err = handleRejectInvite(ctx, tx, b, i, &ack, inviteID, panelMsgID)
+			case customID == "leave_team_button":
+				err = handleLeaveTeamButton(ctx, tx, b, i, &ack)
+			case strings.Contains(customID, "confirm_leave_team_"):
+				panelMsgID := strings.TrimPrefix(customID, "confirm_leave_team_")
+				err = handleLeaveTeamConfirm(ctx, tx, b, i, &ack, panelMsgID)
+			case customID == "refresh_team_panel":
+				err = handlerRefreshTeamPanel(ctx, tx, b, i, &ack)
 			default:
 				err = errors.New("No handler for interaction")
 			}

@@ -1,4 +1,4 @@
-package registrationapprovalchannel
+package freeagentapplications
 
 import (
 	"context"
@@ -17,8 +17,8 @@ func Setup(
 ) {
 	defer wg.Done()
 	channel := &bot.Channel{
-		Purpose: models.ChannelRegistrationApproval,
-		Label:   "Registration approval channel",
+		Purpose: models.ChannelFreeAgentApplications,
+		Label:   "Free Agent Applications channel",
 		Handler: handleInteractions(ctx, b),
 	}
 	err := b.AddChannel(channel)
@@ -34,8 +34,7 @@ func Setup(
 
 	// register all the messages
 	var errs []error
-	// TODO: add an instruction/info message at top?
-	// errs = append(errs, channel.RegisterMessage(playerRegistration))
+	errs = append(errs, channel.RegisterMessage(infoMessage))
 
 	// check for any errors setting up messages and return if any occured
 	hadErr := false

@@ -30,6 +30,24 @@ func (b *Bot) Acknowledge(
 	return nil
 }
 
+// Acknowledge the interaction silently for no response
+func (b *Bot) SilentAcknowledge(
+	i *discordgo.InteractionCreate,
+	ack *bool,
+) error {
+	b.Logger.Debug().Msg("Acknowledging interaction")
+	err := b.Session.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredMessageUpdate,
+	})
+	if err != nil {
+		return errors.Wrap(err, "s.InteractionRespond")
+	}
+	if ack != nil {
+		*ack = true
+	}
+	return nil
+}
+
 // Reply to the interaction with a follow up ephemeral response that deletes after 5 seconds
 func (b *Bot) FollowUp(
 	msg string,
