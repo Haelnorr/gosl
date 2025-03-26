@@ -1,0 +1,36 @@
+package page
+
+import "gosl/internal/view/layout"
+
+// Returns the about page content
+templ RegistrationHelp() {
+	@layout.Global("About") {
+		<div class="text-center max-w-150 m-auto">
+			<div class="text-4xl mt-8">Registration Help</div>
+			<div class="text-xl font-bold mt-4">How to find your Steam ID</div>
+			<div class="text-lg mt-2 flex flex-col gap-4 items-center">
+				<p>
+					Log into Steam and go to the 'Account Details' page, located in the top right menu.
+				</p>
+				<img
+					src="/static/assets/steamaccountmenuexample.png"
+				/>
+				<p>
+					Once on the Account details page, your Steam ID can be found in the page header.
+				</p>
+				<img
+					src="/static/assets/steamidexample.png"
+				/>
+			</div>
+			<div class="text-xl font-bold mt-8">Why is this needed?</div>
+			<div class="text-lg mt-2 flex flex-col gap-4 items-center">
+				Every steam account that has played Slapshot is assigned a 
+				unique SlapID. The Bot uses this SlapID to track player stats 
+				and to help ensure the integrity of league matches. 
+				To register as a player in OSL using this Bot, you will need to 
+				have a Steam account that has launched Slapshot and been 
+				assigned a SlapID.
+			</div>
+		</div>
+	}
+}

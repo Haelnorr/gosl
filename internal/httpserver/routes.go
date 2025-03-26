@@ -27,4 +27,7 @@ func addRoutes(
 
 	// Index page and unhandled catchall (404)
 	route("GET /", handler.Root())
+
+	// Player Registration help page
+	route("GET /registration-help", handler.RegistrationHelp())
 }

@@ -12,6 +12,7 @@ func setupFlags() map[string]string {
 	test := flag.Bool("test", false, "Run server in test mode")
 	tester := flag.Bool("tester", false, "Run tester function instead of main program")
 	dbver := flag.Bool("dbver", false, "Get the version of the database required")
+	nobot := flag.Bool("no-bot", false, "Run the program without launching the discord bot")
 	loglevel := flag.String("loglevel", "", "Set log level")
 	logoutput := flag.String("logoutput", "", "Set log destination (file, console or both)")
 	flag.Parse()
@@ -22,6 +23,7 @@ func setupFlags() map[string]string {
 		"port":      *port,
 		"test":      strconv.FormatBool(*test),
 		"tester":    strconv.FormatBool(*tester),
+		"nobot":     strconv.FormatBool(*nobot),
 		"dbver":     strconv.FormatBool(*dbver),
 		"loglevel":  *loglevel,
 		"logoutput": *logoutput,

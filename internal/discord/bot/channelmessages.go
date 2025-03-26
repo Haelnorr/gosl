@@ -70,7 +70,8 @@ func (m *Message) Setup(ctx context.Context, wg *sync.WaitGroup, errch chan erro
 // Signals that the message will be updated shortly, putting the message into
 // a locked state so it cannot be modified until the update is completed.
 // If addToQueue is set to false and an update is in progress, it will fail and
-// return false.
+// return false. In all other cases it will return true (i.e. only needs to be
+// checked if calling StartUpdate(false).
 // If addToQueue is set to true and an update is already in progress, this will
 // pause the update in progress until the update queue clears
 func (m *Message) StartUpdate(addToQueue bool) bool {
