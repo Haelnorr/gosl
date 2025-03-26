@@ -23,12 +23,14 @@ func handleToggleRegistrationInteraction(
 	if err != nil {
 		return errors.Wrap(err, "b.GetMessage")
 	}
-	activeSeasonInfo.StartUpdate(false)
 	teamRegistration, err := b.GetMessage(models.ChannelRegistration, models.MsgTeamRegistration)
 	if err != nil {
 		return errors.Wrap(err, "b.GetMessage")
 	}
-	teamRegistration.StartUpdate(false)
+	if !activeSeasonInfo.StartUpdate(false) || !teamRegistration.StartUpdate(false) {
+		b.SlowDown(i, *ack)
+		return nil
+	}
 	b.Logger.Debug().Msg("Getting active season")
 	season, err := models.GetActiveSeason(ctx, tx)
 	if err != nil {

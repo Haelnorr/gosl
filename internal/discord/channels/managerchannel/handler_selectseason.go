@@ -38,11 +38,12 @@ func handleSelectSeasonInteraction(
 	if err != nil {
 		return errors.Wrap(err, "b.GetMessage")
 	}
-	teamRegistration.StartUpdate(false)
-	freeAgentRegistration.StartUpdate(false)
-	teamRosters.StartUpdate(false)
+	teamRegistration.StartUpdate(true)
+	freeAgentRegistration.StartUpdate(true)
+	teamRosters.StartUpdate(true)
 	if !msgSelectSeason.StartUpdate(false) || !msgActiveSeason.StartUpdate(false) {
-		return b.Error("Slow down!", "An update is in progress, please try again", i, true)
+		b.SlowDown(i, *ack)
+		return nil
 	}
 	season := i.MessageComponentData().Values[0]
 	err = models.SetActiveSeason(ctx, tx, season)

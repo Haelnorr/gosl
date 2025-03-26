@@ -23,7 +23,10 @@ func handleSelectLeaguesInteraction(
 	if err != nil {
 		return errors.Wrap(err, "b.GetMessage")
 	}
-	activeSeasonInfo.StartUpdate(false)
+	if !activeSeasonInfo.StartUpdate(false) {
+		b.SlowDown(i, *ack)
+		return nil
+	}
 	b.Logger.Debug().Msg("Getting active season")
 	season, err := models.GetActiveSeason(ctx, tx)
 	if err != nil {

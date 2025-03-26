@@ -26,7 +26,10 @@ func handleSelectChannelInteraction(
 	if err != nil {
 		return errors.Wrap(err, "b.GetMessage")
 	}
-	msgSelectChannels.StartUpdate(false)
+	if !msgSelectChannels.StartUpdate(false) {
+		b.SlowDown(i, *ack)
+		return nil
+	}
 	selectedChannel := i.MessageComponentData().Values[0]
 	err = models.SetChannel(ctx, tx, selectedChannel, purpose)
 	if err != nil {

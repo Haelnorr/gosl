@@ -23,7 +23,10 @@ func handleSelectAdminRolesInteraction(
 	if err != nil {
 		return errors.Wrap(err, "b.GetMessage")
 	}
-	msgSelectRoles.StartUpdate(false)
+	if !msgSelectRoles.StartUpdate(false) {
+		b.SlowDown(i, *ack)
+		return nil
+	}
 	roles := i.MessageComponentData().Values
 	err = models.SetRoles(ctx, tx, roles, models.PermAdmin)
 	if err != nil {

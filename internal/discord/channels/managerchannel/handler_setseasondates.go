@@ -81,7 +81,10 @@ func handleSetSeasonDatesModalInteraction(
 	if err != nil {
 		return errors.Wrap(err, "b.GetMessage")
 	}
-	activeSeasonInfo.StartUpdate(false)
+	if !activeSeasonInfo.StartUpdate(false) {
+		b.SlowDown(i, *ack)
+		return nil
+	}
 	startDate := i.ModalSubmitData().Components[0].(*discordgo.ActionsRow).
 		Components[0].(*discordgo.TextInput).Value
 	regEndDate := i.ModalSubmitData().Components[1].(*discordgo.ActionsRow).

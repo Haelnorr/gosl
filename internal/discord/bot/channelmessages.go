@@ -12,14 +12,17 @@ import (
 )
 
 type Message struct {
-	ID              string
-	Label           string
-	Purpose         uint16
-	GetContents     MessageContentsFunc
-	channel         *Channel
-	bot             *Bot
-	updateLock      bool
-	updateCountdown int64
+	ID               string
+	Label            string
+	Purpose          uint16
+	GetContents      MessageContentsFunc
+	channel          *Channel
+	bot              *Bot
+	updateLock       bool
+	updateCountdown  int64
+	updateInProgress bool
+	updateQueue      uint16
+	queueLock        sync.Mutex
 }
 
 // Function for returning message contents for a complex message
@@ -64,47 +67,73 @@ func (m *Message) Setup(ctx context.Context, wg *sync.WaitGroup, errch chan erro
 	errch <- nil
 }
 
+// Signals that the message will be updated shortly, putting the message into
+// a locked state so it cannot be modified until the update is completed.
+// If addToQueue is set to false and an update is in progress, it will fail and
+// return false.
+// If addToQueue is set to true and an update is already in progress, this will
+// pause the update in progress until the update queue clears
 func (m *Message) StartUpdate(addToQueue bool) bool {
+	m.queueLock.Lock()
+	defer m.queueLock.Unlock()
 	if m.updateLock && !addToQueue {
 		m.bot.Logger.Debug().Str("msg", m.Label).Msg("Message locked, cancelling")
 		return false
 	}
 	if m.updateLock {
 		m.bot.Logger.Debug().Str("msg", m.Label).Msg("Message locked, queueing")
-		timeToUpdate := time.Now().Add(time.Duration(500 * time.Millisecond)).Unix()
-		m.updateCountdown = timeToUpdate
+		// timeToUpdate := time.Now().Add(time.Duration(750 * time.Millisecond)).Unix()
+		// m.updateCountdown = timeToUpdate
+		m.updateQueue += 1
+		go func() {
+			time.Sleep(10 * time.Second)
+			if m.updateQueue != 0 {
+				m.updateQueue = 0
+				m.bot.Logger.Warn().Str("msg", m.Label).
+					Msg("Message update queue never cleared. Message.Update() may never have been called. Manually clearing queue")
+			}
+		}()
 	} else {
 		m.bot.Logger.Debug().Str("msg", m.Label).Msg("Locking message")
 		m.updateLock = true
 	}
 	return true
 }
-func (m *Message) EndUpdate() {
+func (m *Message) endUpdate() {
 	m.bot.Logger.Debug().Str("msg", m.Label).Msg("Unlocking message")
 	m.updateLock = false
+	m.updateInProgress = false
 }
 
-// Updates (edits) the message with the discord API. Fails if message ID not found
+// Updates (edits) the message with the discord API. Fails if message ID not found.
+// Message.StartUpdate() must be called first. If an update is already in progress
+// and Message.StartUpdate(true) was called (adding update to queue), this is a
+// basically a NOP that just removes the update from queue
 func (m *Message) Update(ctx context.Context, errch chan error) {
 	if !m.updateLock {
-		errch <- errors.New("Message update was not started")
+		errch <- errors.New(fmt.Sprintf("Message update was not started (%s)", m.Label))
 		return
 	}
-	// Get the time 500ms from now
 	// Check if this message has an update request already queued
-	if m.updateCountdown > time.Now().Unix() {
-		// Abandon this update request
+	if m.updateInProgress {
+		// Abandon this update request, removing it from the queue
+		m.updateQueue -= 1
+		// push back the update timer in case more updates come in
+		timeToUpdate := time.Now().Add(time.Duration(750 * time.Millisecond)).UnixMilli()
+		m.updateCountdown = timeToUpdate
 		return
 	}
-	// Initialise the timer
-	timeToUpdate := time.Now().Add(time.Duration(500 * time.Millisecond)).Unix()
-	m.updateCountdown = timeToUpdate
+	m.updateInProgress = true
 	defer func() {
 		// On function exit, release the updateLock
-		m.EndUpdate()
+		m.endUpdate()
 	}()
+	// Initialise the timer
+	start := time.Now()
+	timeToUpdate := start.Add(time.Duration(750 * time.Millisecond)).UnixMilli()
+	m.updateCountdown = timeToUpdate
 	// Wait for the update countdown to expire
-	for m.updateCountdown < time.Now().Unix() {
+	for m.updateCountdown > time.Now().UnixMilli() || m.updateQueue != 0 {
 		time.Sleep(50 * time.Millisecond)
 	}
 	// get the message contents

@@ -76,3 +76,13 @@ func (b *Bot) Forbidden(
 		b.Logger.Warn().Err(err).Msg("Failed to reply to interaction")
 	}
 }
+
+func (b *Bot) SlowDown(
+	i *discordgo.InteractionCreate,
+	ack bool,
+) {
+	err := b.Error("Slow down!", "An update is in progress, please try again", i, ack)
+	if err != nil {
+		b.Logger.Warn().Err(err).Msg("Failed to reply to interaction")
+	}
+}
