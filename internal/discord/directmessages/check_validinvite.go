@@ -9,6 +9,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+// For a given player, and inviteID as a string, check if the invite is valid and
+// can be actioned
 func getValidInvite(
 	ctx context.Context,
 	tx db.SafeTX,

@@ -54,8 +54,7 @@ func handleReregisterTeamSelect(
 		msg = "You are already on a team!"
 	}
 	if msg != "" {
-		b.Error("Error re-registering team", msg, i, true)
-		return nil
+		return b.Error("Error re-registering team", msg, i, true)
 	}
 	err = player.JoinTeam(ctx, tx, team.ID)
 	if err != nil {

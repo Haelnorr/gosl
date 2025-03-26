@@ -29,8 +29,11 @@ func (b *Bot) TripleError(
 	ack bool,
 ) {
 	b.Logger.Error().Err(err).Msg(msg)
-	b.Error(msg, err.Error(), i, ack)
 	b.Log().Error(msg, err)
+	newerr := b.Error(msg, err.Error(), i, ack)
+	if err != nil {
+		b.Logger.Error().Err(newerr).Err(err).Msg("Failed to notify user of the error")
+	}
 }
 
 // Helper function to log an error with the two main logging methods.

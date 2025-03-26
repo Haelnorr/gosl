@@ -2,7 +2,6 @@ package managerchannel
 
 import (
 	"context"
-	"fmt"
 	"gosl/internal/discord/bot"
 	"gosl/internal/models"
 	"time"
@@ -42,26 +41,22 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 		}
 
 		// Check what type of interaction we are handling
+		customID := i.MessageComponentData().CustomID
+		b.Logger.Debug().Str("custom_id", customID).Msg("Handling interaction")
 		if i.Type == discordgo.InteractionMessageComponent {
 			// Handle the direct interactions from message components
 			switch i.MessageComponentData().CustomID {
 			case "season_select":
-				b.Logger.Debug().Msg("Handling season select interaction")
 				err = handleSelectSeasonInteraction(ctx, tx, b, i, &ack)
 			case "create_season_button":
-				b.Logger.Debug().Msg("Handling season create button interaction")
 				err = handleCreateSeasonButtonInteraction(b, i)
 			case "create_season_modal":
-				b.Logger.Debug().Msg("Handling season create modal interaction")
 				err = handleCreateSeasonModalInteraction(ctx, tx, b, i, &ack)
 			case "set_dates_button":
-				b.Logger.Debug().Msg("Handling season create modal interaction")
 				err = handleSetSeasonDatesButtonInteraction(ctx, tx, b, i)
 			case "toggle_registration":
-				b.Logger.Debug().Msg("Handling toggle registration interaction")
 				err = handleToggleRegistrationInteraction(ctx, tx, b, i, &ack)
 			case "select_season_leagues":
-				b.Logger.Debug().Msg("Handling select leagues interaction")
 				err = handleSelectLeaguesInteraction(ctx, tx, b, i, &ack)
 			default:
 				err = errors.New("No handler for interaction")
@@ -71,16 +66,11 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 			// Handle modal interactions
 			switch i.ModalSubmitData().CustomID {
 			case "create_season_modal":
-				b.Logger.Debug().Msg("Handling create season modal interaction")
 				err = handleCreateSeasonModalInteraction(ctx, tx, b, i, &ack)
 			case "set_season_dates_modal":
-				b.Logger.Debug().Msg("Handling set season dates modal interaction")
 				err = handleSetSeasonDatesModalInteraction(ctx, tx, b, i, &ack)
 			default:
-				err = errors.New(fmt.Sprintf(
-					`No handler for interaction: "%s"`,
-					i.MessageComponentData().CustomID,
-				))
+				err = errors.New("No handler for interaction")
 			}
 			// error handling at end of function
 		}

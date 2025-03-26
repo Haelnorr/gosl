@@ -31,8 +31,7 @@ func handleSteamIDModalSubmit(
 		return errors.Wrap(err, "steamapi.GetUser")
 	}
 	if steamuser == nil {
-		b.Error("Invalid Steam ID", "No steam user was found", i, true)
-		return nil
+		return b.Error("Invalid Steam ID", "No steam user was found", i, true)
 	}
 	slapid, err := slapshotapi.GetSlapID(
 		steamuser.SteamID,
@@ -43,19 +42,20 @@ func handleSteamIDModalSubmit(
 		return errors.Wrap(err, "slapshotapi.GetSlapID")
 	}
 	if slapid == 0 {
-		b.Error("Invalid Steam ID", "Steam account hasn't played slapshot", i, true)
-		return nil
+		return b.Error("Invalid Steam ID", "Steam account hasn't played slapshot", i, true)
 	}
 	existingPlayer, err := models.GetPlayerBySlapID(ctx, tx, slapid)
 	if err != nil {
 		return errors.Wrap(err, "models.GetPlayerBySlapID")
 	}
 	if existingPlayer != nil {
-		b.Error("Invalid Steam ID", "Account already linked to a player", i, true)
-		return nil
+		return b.Error("Invalid Steam ID", "Account already linked to a player", i, true)
 	}
 	contents := confirmSlapIDContents(steamuser, slapid)
-	b.FollowUpComplex(contents, i, 60*time.Second)
+	err = b.FollowUpComplex(contents, i, 60*time.Second)
+	if err != nil {
+		return errors.Wrap(err, "b.FollowUpComplex")
+	}
 	return nil
 }
 
@@ -72,8 +72,7 @@ func handleSteamIDConfirm(
 	}
 	if player != nil {
 		msg := fmt.Sprintf("__Player Name:__ %s\n__Slap ID:__ %v", player.Name, player.SlapID)
-		b.Error("You are already registered", msg, i, false)
-		return nil
+		return b.Error("You are already registered", msg, i, false)
 	}
 	regcmp := []discordgo.MessageComponent{
 		components.TextInput("player_name", "Display Name", true, "", 1, 32),

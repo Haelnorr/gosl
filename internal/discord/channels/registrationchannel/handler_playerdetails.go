@@ -40,8 +40,7 @@ func handleDisplayNameSubmit(
 		err = models.CreatePlayer(ctx, tx, uint32(slapid), i.Member.User.ID, displayname)
 		if err != nil {
 			if strings.Contains(err.Error(), "Display name must be unique") {
-				b.Error("Registration failed", err.Error(), i, true)
-				return nil
+				return b.Error("Registration failed", err.Error(), i, true)
 			}
 			return errors.Wrap(err, "models.CreatePlayer")
 		}

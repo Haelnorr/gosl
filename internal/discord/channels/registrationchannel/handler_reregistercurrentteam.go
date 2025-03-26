@@ -45,8 +45,7 @@ func handleReregisterExistingTeamInteraction(
 		msg = "You are not the manager of this team!"
 	}
 	if msg != "" {
-		b.Error("Error re-registering team", msg, i, true)
-		return nil
+		return b.Error("Error re-registering team", msg, i, true)
 	}
 	contents, err := directmessages.TeamManagerComponents(ctx, tx, b, team)
 	if err != nil {

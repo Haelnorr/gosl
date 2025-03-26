@@ -48,8 +48,7 @@ func handleCreateSeasonModalInteraction(
 	season, err := models.CreateSeason(ctx, tx, seasonID, seasonName)
 	if err != nil {
 		if strings.Contains(err.Error(), "must be unique") {
-			b.Error("Error creating season", err.Error(), i, true)
-			return nil
+			return b.Error("Error creating season", err.Error(), i, true)
 		}
 		return errors.Wrap(err, "models.CreateSeason")
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"gosl/internal/discord/bot"
 	"gosl/internal/discord/channels/transferapprovals"
+	"gosl/internal/discord/util"
 	"gosl/internal/models"
 	"gosl/pkg/db"
 	"strings"
@@ -21,13 +22,12 @@ func handleInvitePlayersInteraction(
 	ack *bool,
 ) error {
 	b.Acknowledge(i, ack)
-	team, err := checkPlayerIsManager(ctx, tx, i.User.ID)
+	_, team, err := util.CheckPlayerIsManager(ctx, tx, i.User.ID)
 	if err != nil {
 		if strings.Contains(err.Error(), "VE:") {
-			b.Error("Interaction failed", err.Error(), i, *ack)
-			return nil
+			return b.Error("Interaction failed", err.Error(), i, *ack)
 		}
-		return errors.Wrap(err, "checkPlayerIsManager")
+		return errors.Wrap(err, "util.CheckPlayerIsManager")
 	}
 	now := time.Now()
 	currentPlayers, err := team.Players(ctx, tx, &now, &now)
@@ -65,13 +65,12 @@ func handleInviteSelectedPlayersInteraction(
 	panelMsgID string,
 ) error {
 	b.Acknowledge(i, ack)
-	team, err := checkPlayerIsManager(ctx, tx, i.User.ID)
+	_, team, err := util.CheckPlayerIsManager(ctx, tx, i.User.ID)
 	if err != nil {
 		if strings.Contains(err.Error(), "VE:") {
-			b.Error("Interaction failed", err.Error(), i, *ack)
-			return nil
+			return b.Error("Interaction failed", err.Error(), i, *ack)
 		}
-		return errors.Wrap(err, "checkPlayerIsManager")
+		return errors.Wrap(err, "util.CheckPlayerIsManager")
 	}
 
 	playerIDs := i.MessageComponentData().Values

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gosl/internal/discord/bot"
+	"gosl/internal/discord/util"
 	"gosl/pkg/db"
 	"strings"
 	"time"
@@ -20,13 +21,12 @@ func handleDisbandTeam(
 	ack *bool,
 ) error {
 	b.Acknowledge(i, ack)
-	team, err := checkPlayerIsManager(ctx, tx, i.User.ID)
+	_, team, err := util.CheckPlayerIsManager(ctx, tx, i.User.ID)
 	if err != nil {
 		if strings.Contains(err.Error(), "VE:") {
-			b.Error("Interaction failed", err.Error(), i, *ack)
-			return nil
+			return b.Error("Interaction failed", err.Error(), i, *ack)
 		}
-		return errors.Wrap(err, "checkPlayerIsManager")
+		return errors.Wrap(err, "util.CheckPlayerIsManager")
 	}
 	contents := disbandTeamComponents(team, i.Message.ID)
 	err = b.FollowUpComplex(contents, i, 20*time.Second)
@@ -45,12 +45,12 @@ func handleDisbandTeamConfirm(
 	panelMsgID string,
 ) error {
 	b.Acknowledge(i, ack)
-	team, err := checkPlayerIsManager(ctx, tx, i.User.ID)
+	_, team, err := util.CheckPlayerIsManager(ctx, tx, i.User.ID)
 	if err != nil {
 		if strings.Contains(err.Error(), "VE:") {
 			return b.Error("Interaction failed", err.Error(), i, *ack)
 		}
-		return errors.Wrap(err, "checkPlayerIsManager")
+		return errors.Wrap(err, "util.CheckPlayerIsManager")
 	}
 	err = team.Disband(ctx, tx)
 	if err != nil {

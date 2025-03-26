@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Handle the interactions for the admin channel components
 func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 	b.Logger.Debug().Msg("Adding handler for admin channel interactions")
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {

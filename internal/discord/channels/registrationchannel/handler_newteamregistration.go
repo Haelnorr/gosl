@@ -25,8 +25,7 @@ func handleNewTeamRegistrationButtonInteraction(
 		return errors.Wrap(err, "models.GetPlayerByDiscordID")
 	}
 	if player == nil {
-		b.Error("Unregistered Player", "You must register as a player to register a team", i, false)
-		return nil
+		return b.Error("Unregistered Player", "You must register as a player to register a team", i, false)
 	}
 	currentTeam, err := player.CurrentTeam(ctx, tx)
 	if err != nil {
@@ -35,8 +34,7 @@ func handleNewTeamRegistrationButtonInteraction(
 	if currentTeam != nil {
 		msg := "You are already on a team. " +
 			"Leave your current team or choose 'Register Existing Team'"
-		b.Error("Already on a team", msg, i, false)
-		return nil
+		return b.Error("Already on a team", msg, i, false)
 	}
 	steamcmp := []discordgo.MessageComponent{
 		components.TextInput("team_name", "Team Name", true, "", 1, 64),
@@ -79,8 +77,7 @@ func handleNewTeamDetailsSubmit(
 		msg = msg + fmt.Sprintf("Team abbreviation '%s' is taken", teamAbbr)
 	}
 	if msg != "" {
-		b.Error("Cannot create team", msg, i, true)
-		return nil
+		return b.Error("Cannot create team", msg, i, true)
 	}
 
 	player, err := models.GetPlayerByDiscordID(ctx, tx, i.Member.User.ID)

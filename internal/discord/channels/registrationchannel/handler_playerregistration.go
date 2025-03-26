@@ -24,8 +24,7 @@ func handlePlayerRegistrationButtonInteraction(
 	}
 	if player != nil {
 		msg := fmt.Sprintf("__Player Name:__ %s\n__Slap ID:__ %v", player.Name, player.SlapID)
-		b.Error("You are already registered", msg, i, false)
-		return nil
+		return b.Error("You are already registered", msg, i, false)
 	}
 	steamcmp := []discordgo.MessageComponent{
 		components.TextInput("steam_id", "Steam ID", true, "", 1, 256),

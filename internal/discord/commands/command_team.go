@@ -47,11 +47,14 @@ func handleTeam(
 			return
 		}
 		if player == nil {
-			b.Error(
+			err = b.Error(
 				"Unregistered player",
 				"You are not registered as a player. Please register to use this command",
 				i, true,
 			)
+			if err != nil {
+				b.Logger.Warn().Err(err).Msg("Failed to notify user of the error")
+			}
 			return
 		}
 		pt, err := player.CurrentTeam(ctx, tx)
@@ -60,11 +63,14 @@ func handleTeam(
 			return
 		}
 		if pt == nil {
-			b.Error(
+			err = b.Error(
 				"Not on a team",
 				"You are not currently a member of a team. Join or create one to use this command",
 				i, true,
 			)
+			if err != nil {
+				b.Logger.Warn().Err(err).Msg("Failed to notify user of the error")
+			}
 			return
 		}
 		team, err := models.GetTeamByID(ctx, tx, pt.TeamID)

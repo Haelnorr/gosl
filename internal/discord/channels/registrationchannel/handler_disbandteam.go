@@ -44,8 +44,7 @@ func handleDisbandTeamInteraction(
 		msg = "You are not the manager of this team!"
 	}
 	if msg != "" {
-		b.Error("Error disbanding team", msg, i, true)
-		return nil
+		return b.Error("Error disbanding team", msg, i, true)
 	}
 	err = team.Disband(ctx, tx)
 	if err != nil {

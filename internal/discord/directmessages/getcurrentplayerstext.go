@@ -6,6 +6,7 @@ import (
 	"sort"
 )
 
+// Generates a string with the list of players
 func teamCurrentPlayersMsg(
 	team *models.Team,
 	currentPlayers *[]models.Player,
