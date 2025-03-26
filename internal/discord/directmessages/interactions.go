@@ -30,7 +30,8 @@ func HandleDMInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 		}
 		defer tx.Rollback()
 		b.Logger.Debug().Msg("Handling direct message interaction")
-		if i.Type == discordgo.InteractionMessageComponent {
+		switch i.Type {
+		case discordgo.InteractionMessageComponent:
 			// Handle message component interactions
 			customID := i.MessageComponentData().CustomID
 			b.Logger.Debug().Str("custom_id", customID).Msg("Handling Interaction")
@@ -82,10 +83,10 @@ func HandleDMInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 			case customID == "refresh_team_panel":
 				err = handlerRefreshTeamPanel(ctx, tx, b, i, &ack)
 			default:
-				err = errors.New("No handler for interaction")
+				err = errors.New("no handler for interaction")
 			}
 			// error handling at end of function
-		} else if i.Type == discordgo.InteractionModalSubmit {
+		case discordgo.InteractionModalSubmit:
 			// Handle modal interactions
 			customID := i.ModalSubmitData().CustomID
 			b.Logger.Debug().Str("custom_id", customID).Msg("Handling Interaction")
@@ -94,7 +95,7 @@ func HandleDMInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 				panelMsgID := strings.TrimPrefix(customID, "set_color_modal_")
 				err = handleSetTeamColor(ctx, tx, b, i, &ack, panelMsgID)
 			default:
-				err = errors.New("No handler for interaction")
+				err = errors.New("no handler for interaction")
 			}
 		}
 		// start error handling for interaction handlers

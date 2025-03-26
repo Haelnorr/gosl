@@ -78,5 +78,8 @@ func handleDisbandTeamConfirm(
 		return errors.Wrap(err, "panelMsg.Expire")
 	}
 	err = b.FollowUp(fmt.Sprintf("%s has been disbanded", team.Name), i)
+	if err != nil {
+		return errors.Wrap(err, "b.FollowUp")
+	}
 	return nil
 }

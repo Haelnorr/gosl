@@ -30,7 +30,7 @@ func handleSelectManagerRolesInteraction(
 		return errors.Wrap(err, "setRolesForPermission (manager)")
 	}
 	droles := i.MessageComponentData().Resolved.Roles
-	msg := "League Manager roles updated to:\n"
+	msg := "**League Manager roles updated to:**  \n"
 	for _, role := range roles {
 		msg = msg + " - " + droles[role].Name + "\n"
 	}

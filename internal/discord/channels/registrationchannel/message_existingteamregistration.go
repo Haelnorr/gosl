@@ -18,13 +18,13 @@ func reregisterTeamComponents(team *models.Team) *bot.MessageContents {
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name: fmt.Sprintf("Currently manager of %s (%s)", team.Name, team.Abbreviation),
-				Value: fmt.Sprintf(`
+				Value: `
 Do you want to re-register this team, or disband the team?
 
 Re-registering will retain all current players and start the registration process.
 
 Disbanding will remove all players (including you) and allow you to pick from any teams you have previously been a manager of.
-`),
+`,
 				Inline: false,
 			},
 		},

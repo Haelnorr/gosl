@@ -33,7 +33,8 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 		defer tx.Rollback()
 		b.Logger.Debug().Msg("Handling regsistration channel interaction")
 
-		if i.Type == discordgo.InteractionMessageComponent {
+		switch i.Type {
+		case discordgo.InteractionMessageComponent:
 			// Handle message component interactions
 			customID := i.MessageComponentData().CustomID
 			b.Logger.Debug().Str("custom_id", customID).Msg("Handling interaction")
@@ -63,7 +64,7 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 				err = errors.New("No handler for interaction")
 			}
 			// error handling at end of function
-		} else if i.Type == discordgo.InteractionModalSubmit {
+		case discordgo.InteractionModalSubmit:
 			// Handle modal interactions
 			customID := i.ModalSubmitData().CustomID
 			b.Logger.Debug().Str("custom_id", customID).Msg("Handling interaction")

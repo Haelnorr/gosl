@@ -27,7 +27,7 @@ func registerTeamComponents(
 	for _, league := range *leagues {
 		opts = append(opts, discordgo.SelectMenuOption{
 			Label: league.Division,
-			Value: fmt.Sprintf("%s", league.Division),
+			Value: league.Division,
 		})
 	}
 	embed := &discordgo.MessageEmbed{

@@ -41,11 +41,12 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 		}
 
 		// Check what type of interaction we are handling
-		customID := i.MessageComponentData().CustomID
-		b.Logger.Debug().Str("custom_id", customID).Msg("Handling interaction")
-		if i.Type == discordgo.InteractionMessageComponent {
+		switch i.Type {
+		case discordgo.InteractionMessageComponent:
+			customID := i.MessageComponentData().CustomID
+			b.Logger.Debug().Str("custom_id", customID).Msg("Handling interaction")
 			// Handle the direct interactions from message components
-			switch i.MessageComponentData().CustomID {
+			switch customID {
 			case "season_select":
 				err = handleSelectSeasonInteraction(ctx, tx, b, i, &ack)
 			case "create_season_button":
@@ -62,9 +63,11 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 				err = errors.New("No handler for interaction")
 			}
 			// error handling at end of function
-		} else if i.Type == discordgo.InteractionModalSubmit {
+		case discordgo.InteractionModalSubmit:
+			customID := i.ModalSubmitData().CustomID
+			b.Logger.Debug().Str("custom_id", customID).Msg("Handling interaction")
 			// Handle modal interactions
-			switch i.ModalSubmitData().CustomID {
+			switch customID {
 			case "create_season_modal":
 				err = handleCreateSeasonModalInteraction(ctx, tx, b, i, &ack)
 			case "set_season_dates_modal":

@@ -113,6 +113,7 @@ func handleUploadLogs(
 		}
 
 		// TODO: actually do something with the log data
+		_ = logs
 
 		tx.Commit()
 		err = b.FollowUp("Log files uploaded", i)

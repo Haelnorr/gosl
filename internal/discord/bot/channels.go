@@ -6,6 +6,7 @@ import (
 	"gosl/internal/models"
 	"gosl/pkg/db"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
@@ -160,8 +161,10 @@ func (c *Channel) SendFile(message, filename string, file io.Reader) (*discordgo
 func (c *Channel) DeleteMessage(m *Message) {
 	err := c.bot.Session.ChannelMessageDelete(c.ID, m.ID)
 	if err != nil {
-		c.bot.Logger.Warn().Err(err).Str("msg", m.Label).
-			Msg("Failed to delete message in discord")
+		if !strings.Contains(err.Error(), "HTTP 404 Not Found") {
+			c.bot.Logger.Warn().Err(err).Str("msg", m.Label).
+				Msg("Failed to delete message in discord")
+		}
 	}
 }
 

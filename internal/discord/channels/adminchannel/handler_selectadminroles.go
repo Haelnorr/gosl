@@ -30,7 +30,7 @@ func handleSelectAdminRolesInteraction(
 		return errors.Wrap(err, "setRolesForPermission (admin)")
 	}
 	droles := i.MessageComponentData().Resolved.Roles
-	msg := "Admin roles updated to:\n"
+	msg := "**Admin roles updated to:**  \n"
 	for _, role := range roles {
 		msg = msg + " - " + droles[role].Name + "\n"
 	}

@@ -25,7 +25,7 @@ func registerFreeAgentSelectLeagueComponents(
 	for _, league := range *leagues {
 		opts = append(opts, discordgo.SelectMenuOption{
 			Label: league.Division,
-			Value: fmt.Sprintf("%s", league.Division),
+			Value: league.Division,
 		})
 	}
 	embed := &discordgo.MessageEmbed{
@@ -42,7 +42,7 @@ Select your preferred league from the select box to apply.
 		},
 	}
 	msgcomps := components.StringSelect(
-		fmt.Sprintf("freeagent_registration_select_league"),
+		"freeagent_registration_select_league",
 		"Select Preferred League",
 		opts,
 		1,
