@@ -55,6 +55,10 @@ func Start(ctx context.Context, b *bot.Bot) error {
 		teamlogos.Setup,
 	}
 
+	// Start the queue watching
+	// TODO: add context and use ticker
+	b.StartWatchingQueue(ctx)
+
 	// Run all the setup commands
 	for _, setup := range setups {
 		wg.Add(1)

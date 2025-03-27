@@ -25,6 +25,7 @@ type Bot struct {
 	DirectMessages  map[string]*DirectMessage
 	DynamicMessages map[string]*DynamicMessage
 	pool            *requestPool
+	statusMsg       string
 }
 
 // Function for setting up a bot package
