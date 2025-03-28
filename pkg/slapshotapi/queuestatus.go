@@ -2,9 +2,39 @@ package slapshotapi
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 )
+
+type endpointMatchmaking struct {
+	regions []string
+}
+
+func getEndpointMatchmaking(regions []string) *endpointMatchmaking {
+	return &endpointMatchmaking{
+		regions: regions,
+	}
+}
+
+func (ep *endpointMatchmaking) path() string {
+	path := "/api/public/matchmaking%s"
+	filters := ""
+	if len(ep.regions) > 0 {
+		filters = "?regions="
+		for i, region := range ep.regions {
+			filters = filters + region
+			if i+1 != len(ep.regions) {
+				filters = filters + ","
+			}
+		}
+	}
+	return fmt.Sprintf(path, filters)
+}
+
+func (ep *endpointMatchmaking) method() string {
+	return "GET"
+}
 
 type matchmakingresp struct {
 	Playlists PubsQueue `json:"playlists"`
@@ -16,11 +46,11 @@ type PubsQueue struct {
 }
 
 // Get the SlapID of the steam user
-func GetQueueStatus(apikey string, env string) (*PubsQueue, error) {
-	endpoint := "api/public/matchmaking?regions=oce-east"
-	data, err := slapapiGet(endpoint, env, apikey)
+func GetQueueStatus(regions []string, cfg *SlapAPIConfig) (*PubsQueue, error) {
+	endpoint := getEndpointMatchmaking(regions)
+	data, err := slapapiReq(endpoint, cfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "slapapiGet")
+		return nil, errors.Wrap(err, "slapapiReq")
 	}
 	resp := matchmakingresp{}
 	json.Unmarshal(data, &resp)

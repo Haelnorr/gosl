@@ -31,7 +31,9 @@ func (b *Bot) updateStatus() error {
 }
 
 func (b *Bot) getPubsQueue() (*slapshotapi.PubsQueue, error) {
-	queue, err := slapshotapi.GetQueueStatus(b.Config.SlapshotAPIKey, b.Config.SlapshotAPIEnv)
+	regions := make([]string, 1)
+	regions[0] = slapshotapi.RegionOCEEast
+	queue, err := slapshotapi.GetQueueStatus(regions, b.Config.SlapshotAPIConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "slapshotapi.GetQueueStatus")
 	}

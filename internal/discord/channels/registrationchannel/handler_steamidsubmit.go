@@ -35,8 +35,7 @@ func handleSteamIDModalSubmit(
 	}
 	slapid, err := slapshotapi.GetSlapID(
 		steamuser.SteamID,
-		b.Config.SlapshotAPIKey,
-		b.Config.SlapshotAPIEnv,
+		b.Config.SlapshotAPIConfig,
 	)
 	if err != nil {
 		return errors.Wrap(err, "slapshotapi.GetSlapID")
