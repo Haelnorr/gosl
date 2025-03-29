@@ -1,6 +1,7 @@
 package slapshotapi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -30,9 +31,13 @@ type idresp struct {
 }
 
 // Get the SlapID of the steam user
-func GetSlapID(steamid string, cfg *SlapAPIConfig) (uint32, error) {
+func GetSlapID(
+	ctx context.Context,
+	steamid string,
+	cfg *SlapAPIConfig,
+) (uint32, error) {
 	endpoint := getEndpointSteamID(steamid)
-	data, err := slapapiReq(endpoint, cfg)
+	data, err := slapapiReq(ctx, endpoint, cfg)
 	if err != nil {
 		return 0, errors.Wrap(err, "slapapiReq")
 	}

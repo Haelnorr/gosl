@@ -34,6 +34,7 @@ func handleSteamIDModalSubmit(
 		return b.Error("Invalid Steam ID", "No steam user was found", i, true)
 	}
 	slapid, err := slapshotapi.GetSlapID(
+		ctx,
 		steamuser.SteamID,
 		b.Config.SlapshotAPIConfig,
 	)

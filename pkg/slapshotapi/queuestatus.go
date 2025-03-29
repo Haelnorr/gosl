@@ -1,6 +1,7 @@
 package slapshotapi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -46,9 +47,13 @@ type PubsQueue struct {
 }
 
 // Get the SlapID of the steam user
-func GetQueueStatus(regions []string, cfg *SlapAPIConfig) (*PubsQueue, error) {
+func GetQueueStatus(
+	ctx context.Context,
+	regions []string,
+	cfg *SlapAPIConfig,
+) (*PubsQueue, error) {
 	endpoint := getEndpointMatchmaking(regions)
-	data, err := slapapiReq(endpoint, cfg)
+	data, err := slapapiReq(ctx, endpoint, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "slapapiReq")
 	}

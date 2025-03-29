@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (b *Bot) updateStatus() error {
-	queue, err := b.getPubsQueue()
+func (b *Bot) updateStatus(ctx context.Context) error {
+	queue, err := b.getPubsQueue(ctx)
 	if err != nil {
 		return errors.Wrap(err, "b.getPubsQueue")
 	}
@@ -30,10 +30,10 @@ func (b *Bot) updateStatus() error {
 	return nil
 }
 
-func (b *Bot) getPubsQueue() (*slapshotapi.PubsQueue, error) {
+func (b *Bot) getPubsQueue(ctx context.Context) (*slapshotapi.PubsQueue, error) {
 	regions := make([]string, 1)
 	regions[0] = slapshotapi.RegionOCEEast
-	queue, err := slapshotapi.GetQueueStatus(regions, b.Config.SlapshotAPIConfig)
+	queue, err := slapshotapi.GetQueueStatus(ctx, regions, b.Config.SlapshotAPIConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "slapshotapi.GetQueueStatus")
 	}
@@ -58,7 +58,7 @@ func (b *Bot) StartWatchingQueue(ctx context.Context) {
 				b.Logger.Info().Msg("Stopping queue watch due to shutdown.")
 				return
 			case <-ticker.C:
-				err := b.updateStatus()
+				err := b.updateStatus(ctx)
 				if err != nil {
 					b.Logger.Error().Err(err).Msg("Error occured updating the queue status")
 				}

@@ -43,14 +43,11 @@ func Test_main(t *testing.T) {
 		}
 		runSrvErr <- nil
 	}()
-	select {
-	case err := <-runSrvErr:
-		if err != nil {
-			t.Fatalf("Error starting test server: %s", err)
-			return
-		}
-		t.Log("Test server started")
+	if err := <-runSrvErr; err != nil {
+		t.Fatalf("Error starting test server: %s", err)
+		return
 	}
+	t.Log("Test server started")
 
 	t.Run("SIGUSR1 puts database into global lock", func(t *testing.T) {
 		done := make(chan bool)
