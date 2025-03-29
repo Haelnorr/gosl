@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gosl/pkg/logging"
+	"gosl/pkg/slapshotapi"
 
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
@@ -13,29 +14,28 @@ import (
 )
 
 type Config struct {
-	Host               string        // Host to listen on
-	Port               string        // Port to listen on
-	TrustedHost        string        // Domain/Hostname to accept as trusted
-	SSL                bool          // Flag for SSL Mode
-	GZIP               bool          // Flag for GZIP compression on requests
-	ReadHeaderTimeout  time.Duration // Timeout for reading request headers in seconds
-	WriteTimeout       time.Duration // Timeout for writing requests in seconds
-	IdleTimeout        time.Duration // Timeout for idle connections in seconds
-	DBName             string        // Filename of the db - hardcoded and doubles as DB version
-	DBLockTimeout      time.Duration // Timeout for acquiring database lock
-	SecretKey          string        // Secret key for signing tokens
-	AccessTokenExpiry  int64         // Access token expiry in minutes
-	RefreshTokenExpiry int64         // Refresh token expiry in minutes
-	TokenFreshTime     int64         // Time for tokens to stay fresh in minutes
-	LogLevel           zerolog.Level // Log level for global logging. Defaults to info
-	LogOutput          string        // "file", "console", or "both". Defaults to console
-	LogDir             string        // Path to create log files
-	DiscordBotToken    string        // Discord Bot Token
-	DiscordGuildID     string        // ID of the discord server
-	SteamAPIKey        string        // Steam API Key
-	SlapshotAPIKey     string        // Slapshot API Key
-	SlapshotAPIEnv     string        // Slapshot API Env
-	Locale             string        // IANA TZ Locale
+	Host               string                     // Host to listen on
+	Port               string                     // Port to listen on
+	TrustedHost        string                     // Domain/Hostname to accept as trusted
+	SSL                bool                       // Flag for SSL Mode
+	GZIP               bool                       // Flag for GZIP compression on requests
+	ReadHeaderTimeout  time.Duration              // Timeout for reading request headers in seconds
+	WriteTimeout       time.Duration              // Timeout for writing requests in seconds
+	IdleTimeout        time.Duration              // Timeout for idle connections in seconds
+	DBName             string                     // Filename of the db - hardcoded and doubles as DB version
+	DBLockTimeout      time.Duration              // Timeout for acquiring database lock
+	SecretKey          string                     // Secret key for signing tokens
+	AccessTokenExpiry  int64                      // Access token expiry in minutes
+	RefreshTokenExpiry int64                      // Refresh token expiry in minutes
+	TokenFreshTime     int64                      // Time for tokens to stay fresh in minutes
+	LogLevel           zerolog.Level              // Log level for global logging. Defaults to info
+	LogOutput          string                     // "file", "console", or "both". Defaults to console
+	LogDir             string                     // Path to create log files
+	DiscordBotToken    string                     // Discord Bot Token
+	DiscordGuildID     string                     // ID of the discord server
+	SteamAPIKey        string                     // Steam API Key
+	SlapshotAPIConfig  *slapshotapi.SlapAPIConfig // Config for the SlapshotAPI
+	Locale             string                     // IANA TZ Locale
 }
 
 // Load the application configuration and get a pointer to the Config object
@@ -83,6 +83,14 @@ func GetConfig(args map[string]string) (*Config, error) {
 	if logOutput != "both" && logOutput != "console" && logOutput != "file" {
 		logOutput = "console"
 	}
+	slapapikey := os.Getenv("SLAPSHOT_API_KEY")
+	slapapicfg, err := slapshotapi.NewSlapAPIConfig(
+		GetEnvDefault("SLAPSHOT_API_ENV", "staging"),
+		slapapikey,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "slapshotapi.NewSlapAPIConfig")
+	}
 
 	config := &Config{
 		Host:               host,
@@ -105,8 +113,7 @@ func GetConfig(args map[string]string) (*Config, error) {
 		DiscordBotToken:    os.Getenv("DISCORD_BOT_TOKEN"),
 		DiscordGuildID:     os.Getenv("DISCORD_GUILD_ID"),
 		SteamAPIKey:        os.Getenv("STEAM_API_KEY"),
-		SlapshotAPIKey:     os.Getenv("SLAPSHOT_API_KEY"),
-		SlapshotAPIEnv:     GetEnvDefault("SLAPSHOT_API_ENV", "staging"),
+		SlapshotAPIConfig:  slapapicfg,
 		Locale:             GetEnvDefault("LOCALE_TZ", "UTC"),
 	}
 
@@ -122,11 +129,11 @@ func GetConfig(args map[string]string) (*Config, error) {
 	if config.SteamAPIKey == "" && args["dbver"] != "true" {
 		return nil, errors.New("Envar not set: STEAM_API_KEY")
 	}
-	if config.SlapshotAPIKey == "" && args["dbver"] != "true" {
+	if slapapikey == "" && args["dbver"] != "true" {
 		return nil, errors.New("Envar not set: SLAPSHOT_API_KEY")
 	}
 
-	_, err := time.LoadLocation(config.Locale)
+	_, err = time.LoadLocation(config.Locale)
 	if err != nil {
 		return nil, errors.New("LOCALE_TZ envar not a valid IANA TZ identifier")
 	}
