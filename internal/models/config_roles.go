@@ -102,9 +102,8 @@ func SetRoles(
 	roles []string,
 	permid uint16,
 ) error {
-	args := make([]any, 0, len(roles)+1)
 	query := `DELETE FROM config_roles WHERE permission = ?`
-	args = []any{permid}
+	args := []any{permid}
 	if len(roles) != 0 {
 		query = `
         DELETE FROM config_roles WHERE permission = ?

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/pkg/errors"
 )
 
 func cmdUploadLogo(ctx context.Context, b *bot.Bot) *Command {
@@ -133,7 +134,11 @@ func handleUploadLogo(
 			}
 			return
 		}
-		logoChan := b.Channels[models.ChannelTeamLogos]
+		logoChan, err := b.GetChannel(models.ChannelTeamLogos)
+		if err != nil {
+			b.TripleError("Logo upload failed", errors.Wrap(err, "b.GetChannel"), i, true)
+			return
+		}
 
 		msg := fmt.Sprintf("Team Logo for %s", team.TeamName)
 		now := time.Now().Unix()

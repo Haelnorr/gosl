@@ -35,7 +35,10 @@ func handleSelectChannelInteraction(
 	if err != nil {
 		return errors.Wrap(err, "models.SetChannel")
 	}
-	channel := b.Channels[purpose]
+	channel, err := b.GetChannel(purpose)
+	if err != nil {
+		return errors.Wrap(err, "b.GetChannel")
+	}
 	err = channel.UpdateTarget(ctx, tx, selectedChannel)
 	if err != nil {
 		return errors.Wrap(err, "channel.UpdateTarget")

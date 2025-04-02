@@ -16,7 +16,16 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 		if i.Type == discordgo.InteractionApplicationCommand {
 			return
 		}
-		if i.Message.ChannelID != b.Channels[models.ChannelAdmin].ID {
+		adminChannel, err := b.GetChannel(models.ChannelAdmin)
+		if err != nil {
+			b.TripleError("Interaction failed", errors.Wrap(err, "b.GetChannel"), i, false)
+			return
+		}
+		if i.Message == nil {
+			b.TripleError("Interaction failed", errors.New("InteractionCreate.Message is nil"), i, false)
+			return
+		}
+		if i.Message.ChannelID != adminChannel.ID {
 			return
 		}
 		ack := false
@@ -33,6 +42,10 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 			b.Logger.Debug().Msg("Handling admin channel interaction")
 			isAdmin, err := models.MemberHasPermission(
 				ctx, tx, s, b.Config.DiscordGuildID, i.Member, models.PermAdmin)
+			if err != nil {
+				b.TripleError(msg, err, i, ack)
+				return
+			}
 			if !isAdmin {
 				b.Forbidden(i, ack)
 				return

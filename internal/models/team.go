@@ -185,8 +185,6 @@ AND (
 }
 
 func (t *Team) Disband(ctx context.Context, tx *db.SafeWTX) error {
-	// TODO: Check with LC's conditions for disbanding a team and how to handle
-	// in the meantime, just block disband if team placed into a league
 	var exists int
 	query := `
 SELECT EXISTS (

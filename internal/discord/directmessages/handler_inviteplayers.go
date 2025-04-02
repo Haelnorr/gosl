@@ -92,7 +92,10 @@ func handleInviteSelectedPlayersInteraction(
 			return errors.Wrap(err, "TeamInviteComponents")
 		}
 		if invite.Approved == nil {
-			transferChan := b.Channels[models.ChannelTransferApprovals]
+			transferChan, err := b.GetChannel(models.ChannelTransferApprovals)
+			if err != nil {
+				return errors.Wrap(err, "b.GetChannel")
+			}
 			if transferChan.ID == "" {
 				return errors.New("Transfer Approvals channel not configured")
 			}

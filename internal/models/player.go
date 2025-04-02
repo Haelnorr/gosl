@@ -243,7 +243,27 @@ func (p *Player) LeaveTeam(
 	if team.ID != currentTeam.TeamID {
 		return errors.New("Player is not on that team!")
 	}
+	var exists int
 	query := `
+SELECT EXISTS (
+    SELECT 1 FROM team_registration tr
+    JOIN season s ON tr.season_id = s.id
+    WHERE tr.team_id = ?
+    AND tr.approved = 1
+    AND s.active = 1
+);`
+	row, err := tx.QueryRow(ctx, query, team.ID)
+	if err != nil {
+		return errors.Wrap(err, "tx.QueryRow")
+	}
+	err = row.Scan(&exists)
+	if err != nil {
+		return errors.Wrap(err, "row.Scan")
+	}
+	if exists == 1 {
+		return errors.New("Player cannot leave the team as their team is registered for the current season")
+	}
+	query = `
 UPDATE player_team SET left = ?
 WHERE team_id = ? AND player_id = ? AND left IS NULL;
     `

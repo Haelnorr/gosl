@@ -132,7 +132,10 @@ func checkRegistrationEligibility(
 	if team.Logo == "" {
 		return nil, errors.New("RF:Team Logo not uploaded")
 	}
-	chanRegApp := b.Channels[models.ChannelTeamApplications]
+	chanRegApp, err := b.GetChannel(models.ChannelTeamApplications)
+	if err != nil {
+		return nil, errors.Wrap(err, "b.GetChannel")
+	}
 	if chanRegApp.ID == "" {
 		return nil, errors.New("Registration approvals channel not configured")
 	}
