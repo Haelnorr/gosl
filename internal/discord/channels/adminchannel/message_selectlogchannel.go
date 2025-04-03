@@ -47,14 +47,14 @@ func selectLogChannelContents(
 			Description: `Select the channel to output bot logs to`,
 			Color:       0x00ff00, // Green color
 		},
-		Components: components.ChannelSelect(
+		Components: components.ActionRow(components.ChannelSelect(
 			"log_channel_select",
 			"Select the channel for log output",
 			defaultValues,
 			1,
 			1,
 			[]discordgo.ChannelType{discordgo.ChannelTypeGuildText},
-		),
+		)),
 	}
 	return contents, nil
 }

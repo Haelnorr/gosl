@@ -52,9 +52,9 @@ Select players to invite from the list.
 			},
 		},
 	}
-	comps := components.StringSelect(
+	comps := components.ActionRow(components.StringSelect(
 		fmt.Sprintf("invite_selected_players_%s", messageID),
-		"Invite players", opts, 0, maxPlayers, false)
+		"Invite players", opts, 0, maxPlayers, false))
 	return &bot.MessageContents{
 		Embed:      embed,
 		Components: comps,

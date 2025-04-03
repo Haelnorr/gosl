@@ -139,7 +139,7 @@ __Placed In:__ %s
 			},
 		},
 	}
-	msgcomps = append(msgcomps, selectLeague...)
+	msgcomps = append(msgcomps, components.ActionRow(selectLeague)...)
 	contents := &bot.MessageContents{
 		Embed:      embed,
 		Components: msgcomps,

@@ -41,14 +41,14 @@ Select your preferred league from the select box to apply.
 			},
 		},
 	}
-	msgcomps := components.StringSelect(
+	msgcomps := components.ActionRow(components.StringSelect(
 		"freeagent_registration_select_league",
 		"Select Preferred League",
 		opts,
 		1,
 		1,
 		false,
-	)
+	))
 	contents := &bot.MessageContents{
 		Embed:      embed,
 		Components: msgcomps,

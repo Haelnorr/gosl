@@ -43,14 +43,14 @@ Select your preferred league from the select box to apply.
 			},
 		},
 	}
-	msgcomps := components.StringSelect(
+	msgcomps := components.ActionRow(components.StringSelect(
 		fmt.Sprintf("register_team_select_league_%s", messageID),
 		"Select Preferred League",
 		opts,
 		1,
 		1,
 		false,
-	)
+	))
 	contents := &bot.MessageContents{
 		Embed:      embed,
 		Components: msgcomps,

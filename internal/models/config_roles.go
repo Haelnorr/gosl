@@ -11,8 +11,14 @@ import (
 )
 
 const (
-	PermAdmin         uint16 = 1 // Admin permission
-	PermLeagueManager uint16 = 2 // League Manager permission
+	PermAdmin           uint16 = 1 // Admin permission
+	PermLeagueManager   uint16 = 2 // League Manager permission
+	PermProTeamManager  uint16 = 3
+	PermIMTeamManager   uint16 = 4
+	PermOpenTeamManager uint16 = 5
+	PermProFreeAgent    uint16 = 6
+	PermIMFreeAgent     uint16 = 7
+	PermOpenFreeAgent   uint16 = 8
 )
 
 // Add a permission to the provided role

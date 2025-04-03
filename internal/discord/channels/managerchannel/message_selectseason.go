@@ -65,14 +65,14 @@ This will update all related messages to show data for the selected season.
 (i.e. team rosters, fixtures).`,
 			Color: 0x00ff00, // Green color
 		},
-		Components: components.StringSelect(
+		Components: components.ActionRow(components.StringSelect(
 			"season_select",
 			"Select active season",
 			options,
 			1,
 			1,
 			false,
-		),
+		)),
 	}
 	return contents, nil
 }

@@ -71,6 +71,18 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 				err = handleSelectChannelInteraction(ctx, tx, b, i, &ack, models.ChannelFreeAgentApplications)
 			case "transfer_approval_channel_select":
 				err = handleSelectChannelInteraction(ctx, tx, b, i, &ack, models.ChannelTransferApprovals)
+			case "pro_team_manager_role_select":
+				err = handleSelectTeamMgrRolesInteraction(ctx, tx, b, i, &ack, "Pro")
+			case "im_team_manager_role_select":
+				err = handleSelectTeamMgrRolesInteraction(ctx, tx, b, i, &ack, "IM")
+			case "open_team_manager_role_select":
+				err = handleSelectTeamMgrRolesInteraction(ctx, tx, b, i, &ack, "Open")
+			case "pro_freeagent_role_select":
+				err = handleSelectFARolesInteraction(ctx, tx, b, i, &ack, "Pro")
+			case "im_freeagent_role_select":
+				err = handleSelectFARolesInteraction(ctx, tx, b, i, &ack, "IM")
+			case "open_freeagent_role_select":
+				err = handleSelectFARolesInteraction(ctx, tx, b, i, &ack, "Open")
 			default:
 				err = errors.New("No handler for interaction")
 			}
