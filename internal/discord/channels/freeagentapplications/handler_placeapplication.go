@@ -63,6 +63,19 @@ func handlePlaceFreeAgentLeagueSelect(
 	if err != nil {
 		return errors.Wrap(err, "teamrosters.UpdateTeamRosters")
 	}
+	var rolePerm uint16
+	switch app.PlacedLeagueName {
+	case "Pro":
+		rolePerm = models.PermProFreeAgent
+	case "IM":
+		rolePerm = models.PermIMFreeAgent
+	case "Open":
+		rolePerm = models.PermOpenFreeAgent
+	}
+	err = b.AddRoleToUser(ctx, tx, player, rolePerm)
+	if err != nil {
+		return errors.Wrap(err, "b.AddRoleToUser")
+	}
 
 	err = updateAppMsg(ctx, tx, b, i, app, true)
 	if err != nil {
