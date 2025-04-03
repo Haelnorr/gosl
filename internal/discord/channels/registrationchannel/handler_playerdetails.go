@@ -45,6 +45,14 @@ func handleDisplayNameSubmit(
 			return errors.Wrap(err, "models.CreatePlayer")
 		}
 	}
+	err = b.SendDirectMessage("Player registration successful", "You have registered as a player in OSL!", i.Member.User.ID)
+	if err != nil {
+		if strings.Contains(err.Error(), "403") {
+			tx.Rollback()
+			return b.Error("Registration failed", "You need to allow the bot to DM you. Right click the server icon, go to Privacy Settings, and enable DM's from members in this server.", i, true)
+		}
+		return errors.Wrap(err, "b.SendDirectMessage")
+	}
 	err = b.FollowUp("Player registration successful!", i)
 	if err != nil {
 		return errors.Wrap(err, "b.FollowUp")
