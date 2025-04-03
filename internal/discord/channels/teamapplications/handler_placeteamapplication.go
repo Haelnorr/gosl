@@ -9,6 +9,7 @@ import (
 	"gosl/pkg/db"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
@@ -61,6 +62,16 @@ func handlePlaceTeamLeagueSelect(
 	if err != nil {
 		return errors.Wrap(err, "teamrosters.UpdateTeamRosters")
 	}
+	team, err := models.GetTeamByID(ctx, tx, app.TeamID)
+	if err != nil {
+		return errors.Wrap(err, "models.GetTeamByID")
+	}
+
+	// TEST: call roles func
+	err = applyTeamRoles(ctx, tx, b, team, app.PlacedLeagueName)
+	if err != nil {
+		return errors.Wrap(err, "applyTeamRoles")
+	}
 
 	err = updateAppMsg(ctx, tx, b, i, app, true)
 	if err != nil {
@@ -68,4 +79,96 @@ func handlePlaceTeamLeagueSelect(
 	}
 	b.Log().UserEvent(i.Member, msg)
 	return b.FollowUp(msg, i)
+}
+
+func applyTeamRoles(
+	ctx context.Context,
+	tx *db.SafeWTX,
+	b *bot.Bot,
+	team *models.Team,
+	placedLeagueName string,
+) error {
+	roleExists := false
+	roleID := ""
+	var err error
+	if team.RoleID != "" {
+		// TEST: check if the role still exists in discord server
+		roleExists, err = b.CheckRoleExists(team.RoleID)
+		if err != nil {
+			return errors.Wrap(err, "b.CheckRoleExists")
+		}
+	}
+	if !roleExists {
+		roleID, err = b.CreateRole(team.Name, &team.Color, true)
+		if err != nil {
+			return errors.Wrap(err, "b.CreateRole")
+		}
+		defer func() {
+			if err != nil {
+				err = b.DeleteRole(roleID)
+				if err != nil {
+					b.Logger.Error().Err(err).Msg("Failed to delete role after failure during role assignment")
+				}
+			}
+		}()
+		err = team.AddRole(ctx, tx, roleID)
+		if err != nil {
+			return errors.Wrap(err, "team.AddRole")
+		}
+		// TEST: float the role under open FA
+		faRoles, err := models.GetRoles(ctx, tx, models.PermOpenFreeAgent)
+		if err != nil {
+			return errors.Wrap(err, "models.GetRoles")
+		}
+		if len(faRoles) == 0 {
+			return errors.New("Failed creating team role, no Open FA configured")
+		}
+		err = b.FloatRoleUnder(roleID, faRoles[0])
+		if err != nil {
+			return errors.Wrap(err, "b.FloatRoleUnder")
+		}
+	}
+	if roleID == "" {
+		return errors.New("Failed to setup role for team")
+	}
+	var teamMgrRolePerm uint16
+	switch placedLeagueName {
+	case "Pro":
+		teamMgrRolePerm = models.PermProTeamManager
+	case "IM":
+		teamMgrRolePerm = models.PermIMTeamManager
+	case "Open":
+		teamMgrRolePerm = models.PermOpenTeamManager
+	}
+	roleIDs, err := models.GetRoles(ctx, tx, teamMgrRolePerm)
+	if err != nil {
+		return errors.Wrap(err, "models.GetRoles")
+	}
+	if len(roleIDs) == 0 {
+		return errors.New("No roles for that purpose configured")
+	}
+	if len(roleIDs) > 1 {
+		return errors.New("Multiple roles for that purpose configured, cannot add to user")
+	}
+	managerRoleID := roleIDs[0]
+
+	now := time.Now()
+	players, err := team.Players(ctx, tx, &now, &now)
+	if err != nil {
+		return errors.Wrap(err, "team.Players")
+	}
+	for _, player := range *players {
+		err = b.AddRoleToUser(&player, roleID)
+		if err != nil {
+			return errors.Wrap(err, "b.AddRoleToUser")
+		}
+		if player.ID == team.ManagerID {
+			err = b.AddRoleToUser(&player, managerRoleID)
+			if err != nil {
+				return errors.Wrap(err, "b.AddRoleToUser")
+			}
+		}
+	}
+
+	return nil
 }

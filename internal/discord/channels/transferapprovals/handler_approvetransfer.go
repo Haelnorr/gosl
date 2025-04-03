@@ -82,6 +82,7 @@ func handleApproveTransfer(
 		if err != nil {
 			return errors.Wrap(err, "player.JoinTeam")
 		}
+		// TODO: if team is PLACED, give the player the team role
 		playermsg = fmt.Sprintf(
 			"Your invite to join %s has been approved. You have now joined the team",
 			pti.TeamName)

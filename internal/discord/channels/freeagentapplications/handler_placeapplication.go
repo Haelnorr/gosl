@@ -72,7 +72,18 @@ func handlePlaceFreeAgentLeagueSelect(
 	case "Open":
 		rolePerm = models.PermOpenFreeAgent
 	}
-	err = b.AddRoleToUser(ctx, tx, player, rolePerm)
+	roleIDs, err := models.GetRoles(ctx, tx, rolePerm)
+	if err != nil {
+		return errors.Wrap(err, "models.GetRoles")
+	}
+	if len(roleIDs) == 0 {
+		return errors.New("No roles for that purpose configured")
+	}
+	if len(roleIDs) > 1 {
+		return errors.New("Multiple roles for that purpose configured, cannot add to user")
+	}
+	roleID := roleIDs[0]
+	err = b.AddRoleToUser(player, roleID)
 	if err != nil {
 		return errors.Wrap(err, "b.AddRoleToUser")
 	}
