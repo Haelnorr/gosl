@@ -56,16 +56,16 @@ func updateTeamListsMessages(
 			}
 			playerslist := "Players:"
 			for i, player := range *players {
-				playerslist = playerslist + player.Name
+				playerslist = playerslist + fmt.Sprintf("<@%s>", player.DiscordID)
 				if i < len(*players)-1 {
 					playerslist = playerslist + ", "
 				}
 			}
 			*msg = fmt.Sprintf(`
 %s
-%s (%s) - managed by %s
+<@&%s> (%s) - managed by %s
 %s
-`, *msg, team.Name, team.Abbreviation, team.ManagerName, playerslist)
+`, *msg, team.RoleID, team.Abbreviation, team.ManagerName, playerslist)
 		}
 	}
 	return nil
@@ -92,7 +92,7 @@ func updateUnplacedTeamListMessage(
 		}
 		playerslist := "Players:"
 		for i, player := range *players {
-			playerslist = playerslist + player.Name
+			playerslist = playerslist + fmt.Sprintf("<@%s>", player.DiscordID)
 			if i < len(*players)-1 {
 				playerslist = playerslist + ", "
 			}

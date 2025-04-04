@@ -18,7 +18,16 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 		if i.Type == discordgo.InteractionApplicationCommand {
 			return
 		}
-		if i.Message.ChannelID != b.Channels[models.ChannelTeamApplications].ID {
+		teamAppsChannel, err := b.GetChannel(models.ChannelTeamApplications)
+		if err != nil {
+			b.TripleError("Interaction failed", errors.Wrap(err, "b.GetChannel"), i, false)
+			return
+		}
+		if i.Message == nil {
+			b.TripleError("Interaction failed", errors.New("InteractionCreate.Message is nil"), i, false)
+			return
+		}
+		if i.Message.ChannelID != teamAppsChannel.ID {
 			return
 		}
 		ack := false
@@ -34,6 +43,10 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 		b.Logger.Debug().Msg("Handling team applications channel interaction")
 		isManager, err := models.MemberHasPermission(
 			ctx, tx, s, b.Config.DiscordGuildID, i.Member, models.PermLeagueManager)
+		if err != nil {
+			b.TripleError(msg, err, i, ack)
+			return
+		}
 		if !isManager {
 			b.Forbidden(i, ack)
 			return

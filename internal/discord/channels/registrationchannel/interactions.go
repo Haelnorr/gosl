@@ -18,7 +18,16 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 		if i.Type == discordgo.InteractionApplicationCommand {
 			return
 		}
-		if i.Message.ChannelID != b.Channels[models.ChannelRegistration].ID {
+		registrationChannel, err := b.GetChannel(models.ChannelRegistration)
+		if err != nil {
+			b.TripleError("Interaction failed", errors.Wrap(err, "b.GetChannel"), i, false)
+			return
+		}
+		if i.Message == nil {
+			b.TripleError("Interaction failed", errors.New("InteractionCreate.Message is nil"), i, false)
+			return
+		}
+		if i.Message.ChannelID != registrationChannel.ID {
 			return
 		}
 		ack := false

@@ -70,9 +70,7 @@ func DateStr(t *time.Time) string {
 
 // Parses a hex string to an integer. E.g. color hex codes #00FF00 -> 65280
 func hexToInt(hexStr string) (int, error) {
-	if strings.HasPrefix(hexStr, "#") {
-		hexStr = hexStr[1:]
-	}
+	hexStr = strings.TrimPrefix(hexStr, "#")
 
 	value, err := strconv.ParseInt(hexStr, 16, 0)
 	if err != nil {

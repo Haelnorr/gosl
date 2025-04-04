@@ -2,6 +2,7 @@ package components
 
 import "github.com/bwmarrin/discordgo"
 
+// Returns an ActionsRow with a single TextInput component
 func TextInput(
 	customID string,
 	label string,

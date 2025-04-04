@@ -112,10 +112,10 @@ func teamSelectComponents(
 		})
 	}
 
-	msgcomps := components.StringSelect(
+	msgcomps := components.ActionRow(components.StringSelect(
 		"reregister_select_team",
 		"Select Team",
-		opts, 1, 1, false)
+		opts, 1, 1, false))
 	contents := &bot.MessageContents{
 		Embed:      embed,
 		Components: msgcomps,

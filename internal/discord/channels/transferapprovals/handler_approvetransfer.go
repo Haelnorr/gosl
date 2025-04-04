@@ -82,6 +82,21 @@ func handleApproveTransfer(
 		if err != nil {
 			return errors.Wrap(err, "player.JoinTeam")
 		}
+		team, err := models.GetTeamByID(ctx, tx, pti.TeamID)
+		if err != nil {
+			return errors.Wrap(err, "models.GetTeamByID")
+		}
+		teamRegStatus, err := team.RegistrationStatus(ctx, tx)
+		if err != nil {
+			return errors.Wrap(err, "team.RegistrationStatus")
+		}
+		if teamRegStatus.Placed != 0 {
+			err = b.AddRoleToUser(player, team.RoleID)
+			if err != nil {
+				return errors.Wrap(err, "b.AddRoleToUser")
+			}
+		}
+
 		playermsg = fmt.Sprintf(
 			"Your invite to join %s has been approved. You have now joined the team",
 			pti.TeamName)

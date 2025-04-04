@@ -19,7 +19,7 @@ func handleSelectManagerRolesInteraction(
 	ack *bool,
 ) error {
 	b.Acknowledge(i, ack)
-	msgSelectRoles, err := b.GetMessage(models.ChannelAdmin, models.MsgSelectRoles)
+	msgSelectRoles, err := b.GetMessage(models.ChannelAdmin, models.MsgSelectStaffRoles)
 	if err != nil {
 		return errors.Wrap(err, "b.GetMessage")
 	}

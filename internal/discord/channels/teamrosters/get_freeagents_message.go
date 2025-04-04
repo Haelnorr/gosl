@@ -2,6 +2,7 @@ package teamrosters
 
 import (
 	"context"
+	"fmt"
 	"gosl/internal/models"
 	"gosl/pkg/db"
 
@@ -47,7 +48,7 @@ func updateFreeAgentListsMessages(
 			msg = openFAsmsg
 		}
 		for _, FA := range *FAs {
-			*msg = *msg + "\n - " + FA.Name
+			*msg = *msg + fmt.Sprintf("\n - <@%s>", FA.DiscordID)
 		}
 	}
 	return nil
@@ -71,7 +72,7 @@ func updateUnplacedFreeAgentsListMessage(
 	}
 	*unplacedFAsMsg = "__Approved Free Agents:__"
 	for _, FA := range *FAs {
-		*unplacedFAsMsg = *unplacedFAsMsg + "\n - " + FA.Name
+		*unplacedFAsMsg = *unplacedFAsMsg + fmt.Sprintf("\n - <@%s>", FA.DiscordID)
 	}
 	return nil
 }

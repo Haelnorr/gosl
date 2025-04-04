@@ -72,13 +72,21 @@ func (b *Bot) AddChannel(c *Channel) error {
 	return nil
 }
 
+func (b *Bot) GetChannel(purpose uint16) (*Channel, error) {
+	channel, exists := b.Channels[purpose]
+	if !exists {
+		return nil, errors.New("Channel not found")
+	}
+	return channel, nil
+}
+
 func (b *Bot) GetMessage(
 	channelPurpose uint16,
 	messagePurpose uint16,
 ) (*Message, error) {
-	channel, exists := b.Channels[channelPurpose]
-	if !exists {
-		return nil, errors.New("Channel not found")
+	channel, err := b.GetChannel(channelPurpose)
+	if err != nil {
+		return nil, errors.Wrap(err, "b.GetChannel")
 	}
 	msg, exists := channel.Messages[messagePurpose]
 	if !exists {

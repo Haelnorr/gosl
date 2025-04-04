@@ -2,7 +2,7 @@ package components
 
 import "github.com/bwmarrin/discordgo"
 
-// Return ChannelSelectMenu component wrapped in an ActionsRow
+// Return ChannelSelectMenu component
 func ChannelSelect(
 	customid string,
 	placeholder string,
@@ -10,49 +10,37 @@ func ChannelSelect(
 	minValues int,
 	maxValues int,
 	channelTypes []discordgo.ChannelType,
-) []discordgo.MessageComponent {
-	return []discordgo.MessageComponent{
-		&discordgo.ActionsRow{
-			Components: []discordgo.MessageComponent{
-				&discordgo.SelectMenu{
-					MenuType:      discordgo.ChannelSelectMenu,
-					CustomID:      customid,
-					Placeholder:   placeholder,
-					DefaultValues: defaults,
-					MinValues:     &minValues,
-					MaxValues:     maxValues,
-					ChannelTypes:  channelTypes,
-				},
-			},
-		},
+) *discordgo.SelectMenu {
+	return &discordgo.SelectMenu{
+		MenuType:      discordgo.ChannelSelectMenu,
+		CustomID:      customid,
+		Placeholder:   placeholder,
+		DefaultValues: defaults,
+		MinValues:     &minValues,
+		MaxValues:     maxValues,
+		ChannelTypes:  channelTypes,
 	}
 }
 
-// Return RoleSelectMenu component wrapped in an ActionsRow
+// Return RoleSelectMenu component
 func RoleSelect(
 	customid string,
 	placeholder string,
 	defaults []discordgo.SelectMenuDefaultValue,
 	minValues int,
 	maxValues int,
-) []discordgo.MessageComponent {
-	return []discordgo.MessageComponent{
-		&discordgo.ActionsRow{
-			Components: []discordgo.MessageComponent{
-				&discordgo.SelectMenu{
-					MenuType:      discordgo.RoleSelectMenu,
-					CustomID:      customid,
-					Placeholder:   placeholder,
-					DefaultValues: defaults,
-					MinValues:     &minValues,
-					MaxValues:     maxValues,
-				},
-			},
-		},
+) *discordgo.SelectMenu {
+	return &discordgo.SelectMenu{
+		MenuType:      discordgo.RoleSelectMenu,
+		CustomID:      customid,
+		Placeholder:   placeholder,
+		DefaultValues: defaults,
+		MinValues:     &minValues,
+		MaxValues:     maxValues,
 	}
 }
 
-// Return RoleSelectMenu component wrapped in an ActionsRow
+// Return RoleSelectMenu component
 func StringSelect(
 	customid string,
 	placeholder string,
@@ -60,20 +48,14 @@ func StringSelect(
 	minValues int,
 	maxValues int,
 	disabled bool,
-) []discordgo.MessageComponent {
-	return []discordgo.MessageComponent{
-		&discordgo.ActionsRow{
-			Components: []discordgo.MessageComponent{
-				&discordgo.SelectMenu{
-					MenuType:    discordgo.StringSelectMenu,
-					CustomID:    customid,
-					Placeholder: placeholder,
-					Options:     options,
-					MinValues:   &minValues,
-					MaxValues:   maxValues,
-					Disabled:    disabled,
-				},
-			},
-		},
+) *discordgo.SelectMenu {
+	return &discordgo.SelectMenu{
+		MenuType:    discordgo.StringSelectMenu,
+		CustomID:    customid,
+		Placeholder: placeholder,
+		Options:     options,
+		MinValues:   &minValues,
+		MaxValues:   maxValues,
+		Disabled:    disabled,
 	}
 }

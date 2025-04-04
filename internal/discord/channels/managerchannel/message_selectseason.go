@@ -62,17 +62,21 @@ Select the season to be set as the active season.
 
 **NOTE**
 This will update all related messages to show data for the selected season.
-(i.e. team rosters, fixtures).`,
+(i.e. team rosters, fixtures).
+
+**WARNING**
+This will NOT change, add or remove Team/FA roles from players.
+Changing off an active season before it is finished is a BAD IDEA and you shouldn't do it.`,
 			Color: 0x00ff00, // Green color
 		},
-		Components: components.StringSelect(
+		Components: components.ActionRow(components.StringSelect(
 			"season_select",
 			"Select active season",
 			options,
 			1,
 			1,
 			false,
-		),
+		)),
 	}
 	return contents, nil
 }

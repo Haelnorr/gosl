@@ -136,16 +136,10 @@ __Placed In:__ %s
 					Label:    "Refresh",
 					Disabled: app.Placed != 0,
 				},
-				// TODO: add deleting team for rule breaking submissions
-				// &discordgo.Button{
-				// 	CustomID: fmt.Sprintf("delete_team_%v", team.ID),
-				// 	Label:    "Delete the Team",
-				// 	Style:    discordgo.DangerButton,
-				// },
 			},
 		},
 	}
-	msgcomps = append(msgcomps, selectLeague...)
+	msgcomps = append(msgcomps, components.ActionRow(selectLeague)...)
 	contents := &bot.MessageContents{
 		Embed:      embed,
 		Components: msgcomps,

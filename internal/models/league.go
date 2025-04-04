@@ -119,9 +119,10 @@ func SetLeagues(
 
 func (l *League) GetTeams(ctx context.Context, tx db.SafeTX) (*[]Team, error) {
 	query := `
-SELECT t.id, t.abbreviation, t.name, t.manager_id, p.name, t.color 
+SELECT t.id, t.abbreviation, t.name, t.manager_id, p.name, t.color, tr.role_id
 FROM team t 
 JOIN team_league tl ON tl.team_id = t.id
+LEFT JOIN team_role tr ON tr.team_id = t.id
 JOIN player p ON t.manager_id = p.id
 WHERE tl.league_id = ?;`
 	rows, err := tx.Query(ctx, query, l.ID)
@@ -132,8 +133,9 @@ WHERE tl.league_id = ?;`
 	for rows.Next() {
 		var team Team
 		var color string
+		var roleID sql.NullString
 		err = rows.Scan(&team.ID, &team.Abbreviation, &team.Name,
-			&team.ManagerID, &team.ManagerName, &color)
+			&team.ManagerID, &team.ManagerName, &color, &roleID)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return nil, nil
@@ -145,6 +147,9 @@ WHERE tl.league_id = ?;`
 			team.Color = 0x181825
 		} else {
 			team.Color = colorint
+		}
+		if roleID.Valid {
+			team.RoleID = roleID.String
 		}
 		teams = append(teams, team)
 	}

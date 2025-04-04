@@ -20,6 +20,7 @@ type Team struct {
 	ManagerName  string // from Player.Name
 	Color        int    // colour hex
 	Logo         string // logo URL from team_logo table
+	RoleID       string // from team_role.role_id
 }
 
 func CheckTeamNameExists(
@@ -78,9 +79,10 @@ func GetTeamByID(
 	id uint16,
 ) (*Team, error) {
 	query := `
-SELECT t.id, t.abbreviation, t.name, t.manager_id, p.name, t.color, tl.url
+SELECT t.id, t.abbreviation, t.name, t.manager_id, p.name, t.color, tl.url, tr.role_id
 FROM team t
 JOIN player p ON t.manager_id = p.id
+LEFT JOIN team_role tr ON tr.team_id = t.id
 LEFT JOIN team_logo tl ON tl.team_id = t.id
     AND tl.uploaded = (
         SELECT MAX(uploaded)
@@ -95,8 +97,9 @@ WHERE t.id = ?;`
 	var team Team
 	var color string
 	var logo sql.NullString
+	var roleID sql.NullString
 	err = row.Scan(&team.ID, &team.Abbreviation, &team.Name,
-		&team.ManagerID, &team.ManagerName, &color, &logo)
+		&team.ManagerID, &team.ManagerName, &color, &logo, &roleID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -111,6 +114,9 @@ WHERE t.id = ?;`
 	}
 	if logo.Valid {
 		team.Logo = logo.String
+	}
+	if roleID.Valid {
+		team.RoleID = roleID.String
 	}
 	return &team, nil
 }
@@ -185,8 +191,6 @@ AND (
 }
 
 func (t *Team) Disband(ctx context.Context, tx *db.SafeWTX) error {
-	// TODO: Check with LC's conditions for disbanding a team and how to handle
-	// in the meantime, just block disband if team placed into a league
 	var exists int
 	query := `
 SELECT EXISTS (
@@ -446,4 +450,24 @@ WHERE tr.id = ?;
 	tr.Placed = 0
 	tr.PlacedLeagueName = ""
 	return &tr, nil
+}
+
+func (t *Team) AddRole(ctx context.Context, tx *db.SafeWTX, roleID string) error {
+	query := `INSERT INTO team_role(team_id, role_id) VALUES (?, ?);`
+	_, err := tx.Exec(ctx, query, t.ID, roleID)
+	if err != nil {
+		return errors.Wrap(err, "tx.Exec")
+	}
+	t.RoleID = roleID
+	return nil
+}
+
+func (t *Team) RemoveRole(ctx context.Context, tx *db.SafeWTX) error {
+	query := `DELETE FROM team_role WHERE team_id = ?;`
+	_, err := tx.Exec(ctx, query, t.ID)
+	if err != nil {
+		return errors.Wrap(err, "tx.Exec")
+	}
+	t.RoleID = ""
+	return nil
 }

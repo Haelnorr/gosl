@@ -84,7 +84,7 @@ func activeSeasonComponents(
 			3,
 			false,
 		)
-		comps = append(comps, leagueSelect...)
+		comps = append(comps, components.ActionRow(leagueSelect)...)
 	}
 	tx.Commit()
 	embed := &discordgo.MessageEmbed{

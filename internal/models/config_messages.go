@@ -10,9 +10,11 @@ import (
 
 const (
 	// Admin channel messages
-	MsgSelectLogChannel uint16 = 1 // select log channel message
-	MsgSelectRoles      uint16 = 2 // select manager roles message
-	MsgSelectChannels   uint16 = 3 // select registration channel message
+	MsgSelectLogChannel   uint16 = 1 // select log channel message
+	MsgSelectStaffRoles   uint16 = 2 // select staff roles message
+	MsgSelectChannels     uint16 = 3 // select registration channel message
+	MsgSelectTeamMgrRoles uint16 = 4 // select team manager roles message
+	MsgSelectFARoles      uint16 = 5 // select free agent roles message
 
 	// Manager channel messages
 	MsgSelectSeason uint16 = 11 // select season message

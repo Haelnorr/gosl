@@ -16,7 +16,16 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 		if i.Type == discordgo.InteractionApplicationCommand {
 			return
 		}
-		if i.Message.ChannelID != b.Channels[models.ChannelAdmin].ID {
+		adminChannel, err := b.GetChannel(models.ChannelAdmin)
+		if err != nil {
+			b.TripleError("Interaction failed", errors.Wrap(err, "b.GetChannel"), i, false)
+			return
+		}
+		if i.Message == nil {
+			b.TripleError("Interaction failed", errors.New("InteractionCreate.Message is nil"), i, false)
+			return
+		}
+		if i.Message.ChannelID != adminChannel.ID {
 			return
 		}
 		ack := false
@@ -33,6 +42,10 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 			b.Logger.Debug().Msg("Handling admin channel interaction")
 			isAdmin, err := models.MemberHasPermission(
 				ctx, tx, s, b.Config.DiscordGuildID, i.Member, models.PermAdmin)
+			if err != nil {
+				b.TripleError(msg, err, i, ack)
+				return
+			}
 			if !isAdmin {
 				b.Forbidden(i, ack)
 				return
@@ -58,6 +71,18 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 				err = handleSelectChannelInteraction(ctx, tx, b, i, &ack, models.ChannelFreeAgentApplications)
 			case "transfer_approval_channel_select":
 				err = handleSelectChannelInteraction(ctx, tx, b, i, &ack, models.ChannelTransferApprovals)
+			case "pro_team_manager_role_select":
+				err = handleSelectTeamMgrRolesInteraction(ctx, tx, b, i, &ack, "Pro")
+			case "im_team_manager_role_select":
+				err = handleSelectTeamMgrRolesInteraction(ctx, tx, b, i, &ack, "IM")
+			case "open_team_manager_role_select":
+				err = handleSelectTeamMgrRolesInteraction(ctx, tx, b, i, &ack, "Open")
+			case "pro_freeagent_role_select":
+				err = handleSelectFARolesInteraction(ctx, tx, b, i, &ack, "Pro")
+			case "im_freeagent_role_select":
+				err = handleSelectFARolesInteraction(ctx, tx, b, i, &ack, "IM")
+			case "open_freeagent_role_select":
+				err = handleSelectFARolesInteraction(ctx, tx, b, i, &ack, "Open")
 			default:
 				err = errors.New("No handler for interaction")
 			}

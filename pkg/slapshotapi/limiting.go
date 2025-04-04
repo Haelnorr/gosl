@@ -39,7 +39,6 @@ func (c *slapAPIClient) Do(ctx context.Context, req *http.Request) (*http.Respon
 					continue
 				}
 			}
-			return nil, errors.New("received 429 without Retry-After header")
 		}
 		c.updateLimiterFromHeaders(resp.Header)
 		return resp, nil
