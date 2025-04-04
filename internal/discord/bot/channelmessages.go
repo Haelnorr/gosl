@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gosl/internal/models"
+	"gosl/pkg/db"
 	"sync"
 	"time"
 
@@ -33,7 +34,11 @@ type MessageContents struct {
 }
 
 // Function that returns a MessageContents with the context and bot provided
-type MessageContentsFunc func(ctx context.Context, b *Bot) (*MessageContents, error)
+type MessageContentsFunc func(
+	ctx context.Context,
+	tx db.SafeTX,
+	b *Bot,
+) (*MessageContents, error)
 
 // Prepare the message by checking the database
 func (m *Message) Setup(ctx context.Context, wg *sync.WaitGroup, errch chan error) {
@@ -110,7 +115,7 @@ func (m *Message) endUpdate() {
 // Message.StartUpdate() must be called first. If an update is already in progress
 // and Message.StartUpdate(true) was called (adding update to queue), this is a
 // basically a NOP that just removes the update from queue
-func (m *Message) Update(ctx context.Context, errch chan error) {
+func (m *Message) Update(ctx context.Context, tx db.SafeTX, errch chan error) {
 	if !m.updateLock {
 		errch <- errors.New(fmt.Sprintf("Message update was not started (%s)", m.Label))
 		return
@@ -138,7 +143,7 @@ func (m *Message) Update(ctx context.Context, errch chan error) {
 		time.Sleep(50 * time.Millisecond)
 	}
 	// get the message contents
-	contents, err := m.GetContents(ctx, m.bot)
+	contents, err := m.GetContents(ctx, tx, m.bot)
 	if err != nil {
 		errch <- errors.Wrap(err, fmt.Sprintf("m.GetContents (%s)", m.Label))
 		return
@@ -166,13 +171,14 @@ func (m *Message) Update(ctx context.Context, errch chan error) {
 }
 
 // Send the message with the discord API, updates the database with the message ID
-func (m *Message) SendNew(ctx context.Context, errch chan error) {
+func (m *Message) SendNew(ctx context.Context, rtx db.SafeTX, errch chan error) {
 	// get the message contents
-	contents, err := m.GetContents(ctx, m.bot)
+	contents, err := m.GetContents(ctx, rtx, m.bot)
 	if err != nil {
 		errch <- errors.Wrap(err, fmt.Sprintf("m.GetContents (%s)", m.Label))
 		return
 	}
+	rtx.Commit()
 	m.bot.Logger.Debug().Str("msg", m.Label).Msg("Sending message")
 
 	// send the api request to send the message

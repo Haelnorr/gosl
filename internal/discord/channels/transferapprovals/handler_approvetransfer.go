@@ -119,7 +119,7 @@ func handleApproveTransfer(
 
 	b.Log().UserEvent(i.Member, managermsg)
 	updateRequestMsg(ctx, tx, b, i, pti, true)
-	err = teamrosters.UpdateTeamRosters(ctx, b)
+	err = teamrosters.UpdateTeamRosters(ctx, tx, b)
 	if err != nil {
 		return errors.Wrap(err, "teamrosters.UpdateTeamRosters")
 	}

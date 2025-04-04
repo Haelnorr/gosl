@@ -42,18 +42,19 @@ func handleSelectManagerRolesInteraction(
 	if err != nil {
 		return errors.Wrap(err, "b.FollowUp")
 	}
-	// Spin off updating the message so it doesnt block/get blocked by the transaction
-	// and runs as soon as the interaction is completed
-	go func() {
-		errch := make(chan error)
-		b.Logger.Debug().Msg("Updating manager roles select")
-		go msgSelectRoles.Update(ctx, errch)
-		for err := range errch {
-			if err != nil {
-				msg := "Failed to update message after interaction"
-				b.DoubleError(msg, err)
-			}
+	errch := make(chan error)
+	b.Logger.Debug().Msg("Updating manager roles select")
+	go msgSelectRoles.Update(ctx, tx, errch)
+	hadErr := false
+	for err := range errch {
+		if err != nil {
+			hadErr = true
+			msg := "Failed to update message after interaction"
+			b.DoubleError(msg, err)
 		}
-	}()
+	}
+	if hadErr {
+		return errors.New("Failed to update message(s) after interaction")
+	}
 	return nil
 }

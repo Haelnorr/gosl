@@ -6,7 +6,6 @@ import (
 	"gosl/internal/discord/components"
 	"gosl/internal/models"
 	"gosl/pkg/db"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
@@ -21,24 +20,10 @@ var selectStaffRoles = &bot.Message{
 // Get the message contents for the select roles message
 func selectStaffRolesContents(
 	ctx context.Context,
+	tx db.SafeTX,
 	b *bot.Bot,
 ) (*bot.MessageContents, error) {
 	b.Logger.Debug().Msg("Setting up select staff roles message")
-	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	// HACK:
-	// we use a WTX here to force it to block until commit if an update to
-	// the contents resulted in this function being called.
-	// this is because the message update uses the Message.GetContents field
-	// and doesnt take in a tx as an input
-	// to fix this, either do something like accept a WG and wait until told to proceed
-	// OR make sure all calls to update contents are preceeded by a commit
-	tx, err := b.Conn.Begin(timeout, "selectStaffRolesContents()")
-	if err != nil {
-		return nil, errors.Wrap(err, "b.Conn.Begin")
-	}
-	defer tx.Rollback()
-	b.Logger.Debug().Msg("Getting default values for select roles components")
 	adminRoleSelect, err := getRoleSelect(ctx, tx, models.PermAdmin,
 		"admin_role_select", "Select Admin roles", 0, 10)
 	if err != nil {
@@ -49,7 +34,6 @@ func selectStaffRolesContents(
 	if err != nil {
 		return nil, errors.Wrap(err, "getRoleSelect")
 	}
-	tx.Commit()
 	msgcomps := adminRoleSelect
 	msgcomps = append(msgcomps, leagueMgrRoleSelect...)
 

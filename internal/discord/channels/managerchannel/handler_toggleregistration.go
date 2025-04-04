@@ -49,20 +49,20 @@ func handleToggleRegistrationInteraction(
 	if err != nil {
 		return errors.Wrap(err, "b.FollowUp")
 	}
-	// Spin off updating the message so it doesnt block/get blocked by the transaction
-	// and runs as soon as the interaction is completed
-	go func() {
-		b.Logger.Debug().Msg("Updating active season message")
-		errch := make(chan error)
-		go activeSeasonInfo.Update(ctx, errch)
-		go teamRegistration.Update(ctx, errch)
-		for err := range errch {
-			if err != nil {
-				msg := "Failed to message after interaction"
-				b.Logger.Warn().Err(err).Msg(msg)
-				b.Log().Error(msg, err)
-			}
+	b.Logger.Debug().Msg("Updating active season message")
+	errch := make(chan error)
+	go activeSeasonInfo.Update(ctx, tx, errch)
+	go teamRegistration.Update(ctx, tx, errch)
+	hadErr := false
+	for err := range errch {
+		if err != nil {
+			hadErr = true
+			msg := "Failed to message after interaction"
+			b.DoubleError(msg, err)
 		}
-	}()
+	}
+	if hadErr {
+		return errors.New("Failed to update message(s) after interaction")
+	}
 	return nil
 }

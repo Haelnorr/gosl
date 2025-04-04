@@ -6,7 +6,6 @@ import (
 	"gosl/internal/discord/components"
 	"gosl/internal/models"
 	"gosl/pkg/db"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
@@ -21,17 +20,10 @@ var selectChannels = &bot.Message{
 // Get the message contents for the select channels message
 func selectChannelsContents(
 	ctx context.Context,
+	tx db.SafeTX,
 	b *bot.Bot,
 ) (*bot.MessageContents, error) {
 	b.Logger.Debug().Msg("Setting up select channels message")
-	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	tx, err := b.Conn.RBegin(timeout, "selectChannelsContents()")
-	if err != nil {
-		return nil, errors.Wrap(err, "conn.RBegin")
-	}
-	defer tx.Rollback()
-	b.Logger.Debug().Msg("Getting default values for select channel components")
 	regChannelSelect, err := getChannelSelect(ctx, tx, models.ChannelRegistration,
 		"registration_channel_select", "Player/Team/Free Agent Registrations", 1, 1)
 	if err != nil {
@@ -57,7 +49,6 @@ func selectChannelsContents(
 	if err != nil {
 		return nil, errors.Wrap(err, "getChannelSelect")
 	}
-	tx.Commit()
 
 	embed := &discordgo.MessageEmbed{
 		Title: "Select Channels",

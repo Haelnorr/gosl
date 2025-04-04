@@ -4,6 +4,7 @@ import (
 	"context"
 	"gosl/internal/discord/bot"
 	"gosl/internal/models"
+	"gosl/pkg/db"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -16,6 +17,7 @@ var infoMsg = &bot.Message{
 
 func transferapprovalsinfoContents(
 	ctx context.Context,
+	tx db.SafeTX,
 	b *bot.Bot,
 ) (*bot.MessageContents, error) {
 	contents := &bot.MessageContents{

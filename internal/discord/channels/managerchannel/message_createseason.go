@@ -4,6 +4,7 @@ import (
 	"context"
 	"gosl/internal/discord/bot"
 	"gosl/internal/models"
+	"gosl/pkg/db"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -17,6 +18,7 @@ var createSeason = &bot.Message{
 // Get the message contents for the create season component
 func createSeasonComponents(
 	ctx context.Context,
+	tx db.SafeTX,
 	b *bot.Bot,
 ) (*bot.MessageContents, error) {
 	components := []discordgo.MessageComponent{

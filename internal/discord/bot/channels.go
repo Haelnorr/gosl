@@ -111,6 +111,14 @@ func (c *Channel) SetupMessages(ctx context.Context, swg *sync.WaitGroup, errch 
 		c.bot.Logger.Debug().Str("channel", c.Label).Msg("Channel not set, skipping message updates")
 		return
 	}
+	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	tx, err := c.bot.Conn.RBegin(timeout, fmt.Sprintf("Channel.SetupMessages() (%s)", c.Label))
+	if err != nil {
+		errch <- errors.Wrap(err, fmt.Sprintf("m.bot.Conn.Begin (%s)", c.Label))
+		return
+	}
+	defer tx.Rollback()
 	var wg sync.WaitGroup
 	c.bot.Logger.Debug().Str("channel", c.Label).Msg("Setting up messages")
 	for _, message := range c.Messages {
@@ -123,9 +131,9 @@ func (c *Channel) SetupMessages(ctx context.Context, swg *sync.WaitGroup, errch 
 			message.Setup(ctx, &wg, errch)
 			wg.Wait()
 			if message.ID != "" {
-				message.Update(ctx, errch)
+				message.Update(ctx, tx, errch)
 			} else {
-				message.SendNew(ctx, errch)
+				message.SendNew(ctx, tx, errch)
 			}
 		}()
 	}

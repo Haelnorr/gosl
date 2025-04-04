@@ -57,7 +57,7 @@ func handleInteractions(ctx context.Context, b *bot.Bot) bot.Handler {
 			b.Logger.Debug().Str("custom_id", customID).Msg("Handling Interaction")
 			switch customID {
 			case "refresh_team_rosters":
-				err = handleRefresh(ctx, b, i, &ack)
+				err = handleRefresh(ctx, tx, b, i, &ack)
 			default:
 				err = errors.New("No handler for interaction")
 			}

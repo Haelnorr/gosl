@@ -5,7 +5,7 @@ import (
 	"gosl/internal/discord/bot"
 	"gosl/internal/discord/components"
 	"gosl/internal/models"
-	"time"
+	"gosl/pkg/db"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
@@ -20,22 +20,14 @@ var selectLogChannel = &bot.Message{
 // Get the message contents for the select log channel component
 func selectLogChannelContents(
 	ctx context.Context,
+	tx db.SafeTX,
 	b *bot.Bot,
 ) (*bot.MessageContents, error) {
 	b.Logger.Debug().Msg("Setting up select log channel components")
-	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	tx, err := b.Conn.RBegin(timeout, "selectLogChannelContents()")
-	if err != nil {
-		return nil, errors.Wrap(err, "b.conn.Begin")
-	}
-	defer tx.Rollback()
-	b.Logger.Debug().Msg("Getting default values for select log channel components")
 	logChannelID, err := models.GetChannel(ctx, tx, models.ChannelLog)
 	if err != nil {
 		return nil, errors.Wrap(err, "getChannelForPurpose")
 	}
-	tx.Commit()
 	var defaultValues []discordgo.SelectMenuDefaultValue
 	defaultValues = append(defaultValues, discordgo.SelectMenuDefaultValue{
 		ID:   logChannelID,

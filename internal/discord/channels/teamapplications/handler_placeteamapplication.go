@@ -58,7 +58,7 @@ func handlePlaceTeamLeagueSelect(
 	if err != nil {
 		return errors.Wrap(err, "b.SendDirectMessage")
 	}
-	err = teamrosters.UpdateTeamRosters(ctx, b)
+	err = teamrosters.UpdateTeamRosters(ctx, tx, b)
 	if err != nil {
 		return errors.Wrap(err, "teamrosters.UpdateTeamRosters")
 	}

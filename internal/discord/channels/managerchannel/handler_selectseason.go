@@ -57,23 +57,23 @@ func handleSelectSeasonInteraction(
 	if err != nil {
 		return errors.Wrap(err, "b.FollowUp")
 	}
-	// Spin off updating the message so it doesnt block/get blocked by the transaction
-	// and runs as soon as the interaction is completed
-	go func() {
-		// NOTE: update any other messages that display data from the active season
-		errch := make(chan error)
-		go msgSelectSeason.Update(ctx, errch)
-		go msgActiveSeason.Update(ctx, errch)
-		go teamRegistration.Update(ctx, errch)
-		go freeAgentRegistration.Update(ctx, errch)
-		go teamRosters.Update(ctx, errch)
-		for err := range errch {
-			if err != nil {
-				msg := "Failed to update message after interaction"
-				b.Logger.Warn().Err(err).Msg(msg)
-				b.Log().Error(msg, err)
-			}
+	// NOTE: update any other messages that display data from the active season
+	errch := make(chan error)
+	go msgSelectSeason.Update(ctx, tx, errch)
+	go msgActiveSeason.Update(ctx, tx, errch)
+	go teamRegistration.Update(ctx, tx, errch)
+	go freeAgentRegistration.Update(ctx, tx, errch)
+	go teamRosters.Update(ctx, tx, errch)
+	hadErr := false
+	for err := range errch {
+		if err != nil {
+			hadErr = true
+			msg := "Failed to update message after interaction"
+			b.DoubleError(msg, err)
 		}
-	}()
+	}
+	if hadErr {
+		return errors.New("Failed to update message(s) after interaction")
+	}
 	return nil
 }

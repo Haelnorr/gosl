@@ -6,7 +6,7 @@ import (
 	"gosl/internal/discord/bot"
 	"gosl/internal/discord/components"
 	"gosl/internal/models"
-	"time"
+	"gosl/pkg/db"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
@@ -21,18 +21,10 @@ var activeSeasonInfo = &bot.Message{
 // Get the message contents for the show active season component
 func activeSeasonComponents(
 	ctx context.Context,
+	tx db.SafeTX,
 	b *bot.Bot,
 ) (*bot.MessageContents, error) {
 	b.Logger.Debug().Msg("Setting up active season components")
-	timeout, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	tx, err := b.Conn.RBegin(timeout, "activeSeasonComponents()")
-	if err != nil {
-		return nil, errors.Wrap(err, "b.Conn.RBegin")
-	}
-	defer tx.Rollback()
-
 	season, err := models.GetActiveSeason(ctx, tx)
 	if err != nil {
 		return nil, errors.Wrap(err, "models.GetActiveSeason")
@@ -86,7 +78,6 @@ func activeSeasonComponents(
 		)
 		comps = append(comps, components.ActionRow(leagueSelect)...)
 	}
-	tx.Commit()
 	embed := &discordgo.MessageEmbed{
 		Title: "Active Season",
 		Description: fmt.Sprintf(`
