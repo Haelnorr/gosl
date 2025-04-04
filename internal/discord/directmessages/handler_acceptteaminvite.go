@@ -71,6 +71,16 @@ func handleAcceptInvite(
 		if err != nil {
 			return errors.Wrap(err, "player.JoinTeam")
 		}
+		teamRegStatus, err := team.RegistrationStatus(ctx, tx)
+		if err != nil {
+			return errors.Wrap(err, "team.RegistrationStatus")
+		}
+		if teamRegStatus.Placed != 0 {
+			err = b.AddRoleToUser(player, team.RoleID)
+			if err != nil {
+				return errors.Wrap(err, "b.AddRoleToUser")
+			}
+		}
 		resultMsg = fmt.Sprintf("You have joined %s!", team.Name)
 		managerMsg = fmt.Sprintf("%s has joined %s!", player.Name, team.Name)
 	} else {
