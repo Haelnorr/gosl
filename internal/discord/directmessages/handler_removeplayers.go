@@ -30,6 +30,15 @@ func handleRemovePlayersButton(
 		}
 		return errors.Wrap(err, "checkPlayerIsManager")
 	}
+	teamRegStatus, err := team.RegistrationStatus(ctx, tx)
+	if err != nil {
+		return errors.Wrap(err, "team.RegistrationStatus")
+	}
+	if teamRegStatus.Approved != nil {
+		msg := "Your team has been approved to play in the current season. " +
+			"Please contact a staff member if you wish to remove a player"
+		return b.Error("Failed to remove player", msg, i, *ack)
+	}
 	now := time.Now()
 	currentPlayers, err := team.Players(ctx, tx, &now, &now)
 	if err != nil {

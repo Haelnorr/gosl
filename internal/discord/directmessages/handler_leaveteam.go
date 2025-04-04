@@ -20,7 +20,6 @@ func handleLeaveTeamButton(
 	ack *bool,
 ) error {
 	b.Acknowledge(i, ack)
-	// TODO: fail if team currently registered for a season? ask LCs
 	player, err := models.GetPlayerByDiscordID(ctx, tx, i.User.ID)
 	if err != nil {
 		return errors.Wrap(err, "models.GetPlayerByDiscordID")
@@ -35,6 +34,16 @@ func handleLeaveTeamButton(
 	team, err := models.GetTeamByID(ctx, tx, pt.TeamID)
 	if err != nil {
 		return errors.Wrap(err, "models.GetTeamByID")
+	}
+
+	teamRegStatus, err := team.RegistrationStatus(ctx, tx)
+	if err != nil {
+		return errors.Wrap(err, "team.RegistrationStatus")
+	}
+	if teamRegStatus.Approved != nil {
+		msg := "Your team has been approved to play in the current season. " +
+			"Please contact a staff member if you wish to leave your current team"
+		return b.Error("Failed to leave team", msg, i, *ack)
 	}
 	contents := confirmLeaveTeamComponents(team, i.Message.ID)
 	err = b.FollowUpComplex(contents, i, 30*time.Second)
