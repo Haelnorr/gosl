@@ -67,7 +67,6 @@ func handlePlaceTeamLeagueSelect(
 		return errors.Wrap(err, "models.GetTeamByID")
 	}
 
-	// TEST: call roles func
 	err = applyTeamRoles(ctx, tx, b, team, app.PlacedLeagueName)
 	if err != nil {
 		return errors.Wrap(err, "applyTeamRoles")
@@ -92,11 +91,11 @@ func applyTeamRoles(
 	roleID := ""
 	var err error
 	if team.RoleID != "" {
-		// TEST: check if the role still exists in discord server
 		roleExists, err = b.CheckRoleExists(team.RoleID)
 		if err != nil {
 			return errors.Wrap(err, "b.CheckRoleExists")
 		}
+		roleID = team.RoleID
 	}
 	if !roleExists {
 		roleID, err = b.CreateRole(team.Name, &team.Color, true)
@@ -115,7 +114,6 @@ func applyTeamRoles(
 		if err != nil {
 			return errors.Wrap(err, "team.AddRole")
 		}
-		// TEST: float the role under open FA
 		faRoles, err := models.GetRoles(ctx, tx, models.PermOpenFreeAgent)
 		if err != nil {
 			return errors.Wrap(err, "models.GetRoles")

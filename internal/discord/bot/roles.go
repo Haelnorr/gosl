@@ -86,7 +86,7 @@ func (b *Bot) FloatRoleUnder(roleID string, targetRoleID string) error {
 }
 
 func (b *Bot) CheckRoleExists(roleID string) (bool, error) {
-	role, err := b.Session.GuildRoleEdit(b.Config.DiscordGuildID, roleID, nil)
+	role, err := b.Session.GuildRoleEdit(b.Config.DiscordGuildID, roleID, &discordgo.RoleParams{})
 	if err != nil {
 		if strings.Contains(err.Error(), "404") {
 			return false, nil
