@@ -219,6 +219,7 @@ func (s *Season) SetDates(
 	} else {
 		startTime = parseTextDate(startStr)
 		if startTime != nil {
+			startTime = TimeInLocale(startTime, locale)
 			timeStr := formatISO8601(startTime)
 			newq := fmt.Sprintf(
 				`UPDATE season SET start = "%s" WHERE id = "%s";`,
