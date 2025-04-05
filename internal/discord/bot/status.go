@@ -42,7 +42,7 @@ func (b *Bot) getPubsQueue(ctx context.Context) (*slapshotapi.PubsQueue, error) 
 
 func (b *Bot) StartWatchingQueue(ctx context.Context) {
 	b.Logger.Info().Msg("Queue watch has been started.")
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(15 * time.Second)
 	stoppedByContext := false
 	go func() {
 		defer func() {
